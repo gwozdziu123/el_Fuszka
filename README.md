@@ -3,6 +3,8 @@
 Aplikacja na telefon (PWA) do prowadzenia projektów usług elektrycznych i ich wyceny.
 Działa bez internetu, dane są zapisane w telefonie.
 
+https://gwozdziu123.github.io/el_Fuszka/
+
 ## Pliki
 
 | Plik | Do czego |
