@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#1d4ed8">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="el_Fuszka">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<title>el_Fuszka</title>
+<style>
+:root{
+  --bg:#f2f4f8; --card:#ffffff; --text:#111827; --muted:#6b7280; --line:#e5e7eb;
+  --primary:#1d4ed8; --primary-weak:#e6edff; --on-primary:#ffffff;
+  --danger:#dc2626; --danger-weak:#fdecec; --warn-weak:#fff6e0; --warn:#a16207;
+  --s-wycena:#64748b; --s-w_trakcie:#d97706; --s-zakonczony:#16a34a; --s-rozliczony:#7c3aed;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);
+  --radius:14px; --tabbar-h:64px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1116; --card:#181c24; --text:#e8eaf0; --muted:#9aa2b1; --line:#2a303c;
+    --primary:#6b93f5; --primary-weak:#1c2740; --on-primary:#0b1020;
+    --danger:#f87171; --danger-weak:#3a1d1d; --warn-weak:#3a2f12; --warn:#facc15;
+    --shadow:none; color-scheme:dark;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  min-height:100vh;padding-bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 88px)}
+body.noscroll{overflow:hidden}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select,textarea{font:inherit;color:var(--text)}
+.wrap{max-width:640px;margin:0 auto;padding:0 12px}
+
+/* Top bar */
+.topbar{position:sticky;top:0;z-index:20;background:var(--bg);padding-top:env(safe-area-inset-top)}
+.topbar-in{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:4px;min-height:56px;padding:0 6px 0 12px}
+.topbar h1{flex:1;font-size:20px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topbar.has-back .topbar-in{padding-left:4px}
+.icon-btn{width:44px;height:44px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.icon-btn:active{background:var(--line)}
+.icon-btn svg{width:24px;height:24px}
+
+/* Tab bar */
+.tabbar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);
+  padding-bottom:env(safe-area-inset-bottom)}
+.tabbar-in{max-width:640px;margin:0 auto;display:flex;height:var(--tabbar-h)}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:12px;color:var(--muted);font-weight:600}
+.tab svg{width:24px;height:24px}
+.tab.on{color:var(--primary)}
+.tab.on .tab-ic{background:var(--primary-weak)}
+.tab-ic{width:56px;height:30px;border-radius:15px;display:flex;align-items:center;justify-content:center}
+
+/* FAB */
+.fab{position:fixed;z-index:25;right:16px;bottom:calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 16px);
+  background:var(--primary);color:var(--on-primary);height:56px;padding:0 20px 0 16px;border-radius:18px;
+  display:flex;align-items:center;gap:8px;font-weight:700;box-shadow:0 6px 16px rgba(29,78,216,.35)}
+.fab svg{width:24px;height:24px}
+.fab[hidden]{display:none}
+@media (min-width:672px){.fab{right:calc(50% - 320px + 16px)}}
+
+/* Cards & common */
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);margin:0 0 12px;overflow:hidden}
+.card-pad{padding:14px 16px}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+h3{font-size:16px;margin:0}
+.banner{display:flex;gap:10px;align-items:center;background:var(--warn-weak);color:var(--text);border-radius:var(--radius);padding:12px 14px;margin:0 0 12px;font-size:15px}
+.banner b{color:var(--warn)}
+.search{position:relative;margin:4px 0 10px}
+.search input{width:100%;height:48px;border-radius:24px;border:1px solid var(--line);background:var(--card);padding:0 16px 0 44px;font-size:16px;outline:none}
+.search input:focus{border-color:var(--primary)}
+.search svg{position:absolute;left:14px;top:12px;width:22px;height:22px;color:var(--muted)}
+.chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 12px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--line);background:var(--card);font-size:14px;font-weight:600;display:inline-flex;align-items:center;gap:6px}
+.chip.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.chip .cnt{font-weight:500;opacity:.7}
+.empty{text-align:center;padding:48px 24px;color:var(--muted)}
+.empty svg{width:56px;height:56px;opacity:.5}
+.empty p{margin:8px 0 0}
+
+/* Project cards */
+.pcard{display:block;padding:14px 16px}
+.pcard:active{background:var(--line)}
+.pc-top{display:flex;gap:12px;align-items:baseline}
+.pc-name{flex:1;font-weight:700;font-size:17px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc-sum{font-weight:700;white-space:nowrap}
+.pc-sub{color:var(--muted);font-size:14px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pc-bot{display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:13px}
+.badge{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--sc)}
+.badge::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--sc)}
+.s-wycena{--sc:var(--s-wycena)} .s-w_trakcie{--sc:var(--s-w_trakcie)} .s-zakonczony{--sc:var(--s-zakonczony)} .s-rozliczony{--sc:var(--s-rozliczony)}
+
+/* Project detail */
+.irow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);min-height:52px}
+.irow svg{width:22px;height:22px;color:var(--primary);flex:none}
+.irow .grow{flex:1;min-width:0;overflow-wrap:anywhere}
+a.irow:active{background:var(--line)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px}
+.seg button{min-height:40px;border-radius:10px;border:1px solid var(--line);font-size:12.5px;font-weight:600;padding:2px;line-height:1.15}
+.seg button.on{background:var(--sc);border-color:var(--sc);color:#fff}
+.summary .sum-row{display:flex;justify-content:space-between;padding:6px 16px;font-size:15px}
+.summary .sum-row:first-child{padding-top:14px}
+.summary .sum-total{display:flex;justify-content:space-between;align-items:baseline;padding:10px 16px 14px;margin-top:6px;border-top:1px solid var(--line)}
+.sum-total span{font-weight:600}
+.sum-total b{font-size:24px;color:var(--primary)}
+.sec-head{display:flex;align-items:center;justify-content:space-between;padding:10px 8px 10px 16px;border-bottom:1px solid var(--line)}
+.btn-add{height:40px;padding:0 12px;border-radius:10px;color:var(--primary);font-weight:700;display:inline-flex;align-items:center;gap:4px}
+.btn-add:active{background:var(--primary-weak)}
+.btn-add svg{width:20px;height:20px}
+.row{display:flex;width:100%;text-align:left;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--line);min-height:56px}
+.row:active{background:var(--line)}
+.row-main{flex:1;min-width:0}
+.row-title{font-weight:600;overflow-wrap:anywhere}
+.row-sub{color:var(--muted);font-size:14px}
+.row-amt{font-weight:700;white-space:nowrap}
+.sec-sum{display:flex;justify-content:space-between;padding:12px 16px;font-weight:600;background:var(--primary-weak)}
+.empty-sm{padding:14px 16px;color:var(--muted);font-size:14px;border-bottom:1px solid var(--line)}
+.notes textarea{width:100%;border:0;background:transparent;resize:vertical;min-height:96px;padding:12px 16px;outline:none;font-size:16px}
+
+/* Forms */
+.field{margin:0 0 14px}
+.field label,.flabel{display:block;font-size:14px;font-weight:600;color:var(--muted);margin:0 0 6px}
+.inp{width:100%;height:50px;border:1px solid var(--line);border-radius:12px;background:var(--bg);padding:0 14px;font-size:17px;outline:none}
+textarea.inp{height:auto;min-height:80px;padding:12px 14px;resize:vertical}
+.inp:focus{border-color:var(--primary);background:var(--card)}
+.inp.err{border-color:var(--danger);background:var(--danger-weak)}
+.suffix{position:relative}
+.suffix .inp{padding-right:64px}
+.suffix span{position:absolute;right:14px;top:14px;color:var(--muted);font-size:15px;pointer-events:none}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stepper{display:flex;gap:8px}
+.stepper .inp{text-align:center;font-weight:700}
+.stepper button{width:56px;height:50px;flex:none;border-radius:12px;background:var(--primary-weak);color:var(--primary);font-size:26px;font-weight:700}
+.quick{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.quick button{height:36px;min-width:52px;padding:0 10px;border-radius:18px;border:1px solid var(--line);font-weight:600;font-size:14px}
+.quick button.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.hint{font-size:13px;color:var(--muted);margin-top:6px}
+.check{display:flex;align-items:center;gap:12px;min-height:48px;font-weight:600}
+.check input{width:22px;height:22px;accent-color:var(--primary)}
+.total-box{display:flex;justify-content:space-between;align-items:baseline;background:var(--primary-weak);border-radius:12px;padding:12px 14px;margin-top:4px}
+.total-box b{font-size:22px;color:var(--primary)}
+.total-box small{display:block;color:var(--muted);font-size:13px}
+.sugg{border:1px solid var(--line);border-radius:12px;margin-top:8px;max-height:220px;overflow-y:auto}
+.sugg button{display:flex;width:100%;justify-content:space-between;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);text-align:left}
+.sugg button:last-child{border-bottom:0}
+.sugg button:active,.sugg button.on{background:var(--primary-weak)}
+.sugg .sg-name{flex:1;min-width:0;overflow-wrap:anywhere}
+.sugg .sg-price{font-weight:600;white-space:nowrap}
+.sugg-empty{padding:12px 14px;color:var(--muted);font-size:14px}
+
+.btn{height:50px;padding:0 20px;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn svg{width:20px;height:20px}
+.btn.primary{background:var(--primary);color:var(--on-primary)}
+.btn.ghost{border:1px solid var(--line)}
+.btn.danger{background:var(--danger);color:#fff}
+.btn.danger-ghost{color:var(--danger);border:1px solid var(--line)}
+.btn.block{width:100%}
+.btn:active{filter:brightness(.92)}
+.menu-list button{display:flex;align-items:center;gap:14px;width:100%;min-height:56px;padding:0 4px;border-bottom:1px solid var(--line);font-weight:600;text-align:left}
+.menu-list button:last-child{border-bottom:0}
+.menu-list svg{width:24px;height:24px;color:var(--primary);flex:none}
+.menu-list .danger,.menu-list .danger svg{color:var(--danger)}
+.menu-list small{display:block;font-weight:400;color:var(--muted);font-size:13px}
+.choose{display:grid;gap:10px}
+.choose button{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;border:1px solid var(--line);text-align:left}
+.choose button:active{background:var(--primary-weak)}
+.choose .ci{width:48px;height:48px;border-radius:12px;background:var(--primary-weak);color:var(--primary);display:flex;align-items:center;justify-content:center;flex:none}
+.choose .ci svg{width:26px;height:26px}
+.choose b{display:block;font-size:17px}
+.choose small{color:var(--muted);font-size:14px}
+
+/* Kalkulatory */
+.choose a{display:flex;align-items:center;gap:14px;padding:14px;border-radius:14px;background:var(--card);box-shadow:var(--shadow);text-align:left}
+.choose a:active{background:var(--primary-weak)}
+.choose a .grow{flex:1;min-width:0}
+.choose a > svg{width:20px;height:20px;color:var(--muted);flex:none}
+.segp{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px}
+.segp button{min-height:44px;border-radius:10px;border:1px solid var(--line);font-size:14px;font-weight:600;padding:2px 4px;line-height:1.15}
+.segp button.on{background:var(--primary);border-color:var(--primary);color:var(--on-primary)}
+.segp button small{display:block;font-size:11px;font-weight:500;opacity:.8}
+.inp.calc-out{background:var(--primary-weak);border-color:transparent;color:var(--primary);font-weight:700}
+.lbl-tag{font-weight:500;font-size:12px;color:var(--primary);margin-left:4px}
+.formula{letter-spacing:.01em}
+.formula .f-main{font-size:17px;font-weight:700;padding:2px 0}
+.formula .hint{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.res-head{padding:14px 16px 6px;font-weight:700;color:var(--muted);font-size:14px;text-transform:uppercase;letter-spacing:.04em}
+.res-big{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 16px 4px}
+.res-big b{font-size:30px;line-height:1.1}
+.res-big.ok b{color:var(--s-zakonczony)} .res-big.bad b{color:var(--danger)}
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:4px 10px;border-radius:12px}
+.pill.ok{background:color-mix(in srgb,var(--s-zakonczony) 16%,transparent);color:var(--s-zakonczony)}
+.pill.bad{background:var(--danger-weak);color:var(--danger)}
+.recom{margin:0 12px 12px;padding:12px 14px;border-radius:12px;background:var(--primary-weak);display:flex;align-items:center;gap:12px}
+.recom .grow{flex:1;min-width:0;font-size:15px}
+.recom .btn{height:40px;padding:0 14px}
+details.card summary{padding:14px 16px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between}
+details.card summary::-webkit-details-marker{display:none}
+details.card summary::after{content:"+";font-size:20px;line-height:1;color:var(--muted)}
+details.card[open] summary::after{content:"−"}
+.fx{padding:0 16px 14px;font-size:14px;line-height:1.6}
+.fx code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;background:var(--bg);padding:1px 6px;border-radius:6px}
+select.inp{appearance:none;-webkit-appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 20px) 22px,calc(100% - 14px) 22px;background-size:6px 6px;background-repeat:no-repeat}
+
+/* Sheet */
+#sheet-root{position:fixed;inset:0;z-index:50;pointer-events:none}
+#sheet-root .backdrop{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:0;transition:opacity .2s}
+#sheet-root .sheet{position:absolute;left:0;right:0;bottom:0;margin:0 auto;max-width:640px;max-height:92%;background:var(--card);
+  border-radius:20px 20px 0 0;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .22s ease-out;
+  padding-bottom:env(safe-area-inset-bottom)}
+#sheet-root.open{pointer-events:auto}
+#sheet-root.open .backdrop{opacity:1}
+#sheet-root.open .sheet{transform:none}
+.grab{width:40px;height:4px;border-radius:2px;background:var(--line);margin:8px auto 0}
+.sheet-head{display:flex;align-items:center;padding:4px 6px 4px 18px}
+.sheet-head h2{flex:1;font-size:19px;margin:0}
+.sheet-body{overflow-y:auto;padding:8px 18px 12px;flex:1;-webkit-overflow-scrolling:touch}
+.sheet-foot{display:flex;gap:10px;padding:10px 18px 14px;border-top:1px solid var(--line)}
+.sheet-foot .primary{flex:1}
+.sheet-foot:empty{display:none}
+
+/* Dialog & toast */
+.dlg-back{position:fixed;inset:0;z-index:70;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:24px}
+.dlg{background:var(--card);border-radius:18px;padding:20px;max-width:400px;width:100%}
+.dlg p{margin:0 0 18px;font-size:16px;white-space:pre-line}
+.dlg-btns{display:flex;gap:10px;justify-content:flex-end}
+.dlg-btns .btn{flex:1}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 12px);transform:translate(-50%,-20px);
+  background:#111827;color:#fff;padding:12px 18px;border-radius:12px;font-size:15px;z-index:80;opacity:0;transition:.2s;pointer-events:none;max-width:90vw;text-align:center}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+.set-row{padding:14px 16px;border-bottom:1px solid var(--line)}
+.set-row:last-child{border-bottom:0}
+.kv{display:flex;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--line);font-size:15px}
+.kv:last-child{border-bottom:0}
+.btns{display:grid;gap:10px;padding:0 16px 16px}
+.sec-title{font-size:14px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:18px 4px 8px}
+</style>
+</head>
+<body>
+<header class="topbar" id="topbar"></header>
+<main class="wrap" id="view"></main>
+<button class="fab" id="fab" hidden></button>
+<nav class="tabbar">
+  <div class="tabbar-in">
+    <a class="tab" data-tab="projects" href="#/projects"><span class="tab-ic" data-ic="folder"></span>Projekty</a>
+    <a class="tab" data-tab="catalog" href="#/catalog"><span class="tab-ic" data-ic="box"></span>Katalog</a>
+    <a class="tab" data-tab="calc" href="#/calc"><span class="tab-ic" data-ic="calc"></span>Kalkulatory</a>
+    <a class="tab" data-tab="settings" href="#/settings"><span class="tab-ic" data-ic="gear"></span>Ustawienia</a>
+  </div>
+</nav>
+<div id="sheet-root"></div>
+<div id="dialog-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* ================= Stałe i dane ================= */
+const APP_VERSION = '1.1.3';
+const KEY = 'wyceny.data.v1';
+const STATUSES = [
+  {k:'wycena', l:'Wycena'},
+  {k:'w_trakcie', l:'W trakcie'},
+  {k:'zakonczony', l:'Zakończony'},
+  {k:'rozliczony', l:'Rozliczony'}
+];
+const TYPES = {
+  travel:{one:'Przyjazd', many:'Przyjazdy'},
+  labor:{one:'Robocizna', many:'Robocizna'},
+  part:{one:'Część', many:'Części'}
+};
+
+const ICONS = {
+  folder:'<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h4.6l2 2h8.4A1.5 1.5 0 0 1 21 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5z"/>',
+  box:'<path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5z"/><path d="M3.5 7.5 12 12l8.5-4.5M12 12v9"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-1.8-.3 1.6 1.6 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-1-1.5 1.6 1.6 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.6 1.6 0 0 0 .3-1.8 1.6 1.6 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.5-1 1.6 1.6 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9a1.6 1.6 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 1 1.5 1.6 1.6 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8V9a1.6 1.6 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.6 1.6 0 0 0-1.5 1z"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  back:'<path d="M15 5l-7 7 7 7"/>',
+  more:'<circle cx="12" cy="5" r="1.4" fill="currentColor"/><circle cx="12" cy="12" r="1.4" fill="currentColor"/><circle cx="12" cy="19" r="1.4" fill="currentColor"/>',
+  close:'<path d="M6 6l12 12M18 6 6 18"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
+  pin:'<path d="M12 21s-7-6.2-7-11.5A7 7 0 0 1 19 9.5C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  phone:'<path d="M5 4h3.5l1.5 4-2 1.5a11 11 0 0 0 6.5 6.5l1.5-2 4 1.5V19a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>',
+  road:'<path d="M5 20 9 4M19 20 15 4M12 6v2M12 11v2M12 16v2"/>',
+  car:'<path d="M5 16V11l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="7.5" cy="13" r="1" fill="currentColor"/><circle cx="16.5" cy="13" r="1" fill="currentColor"/>',
+  clock:'<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+  bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7z"/>',
+  edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
+  trash:'<path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/>',
+  refresh:'<path d="M20 11a8 8 0 0 0-14.7-4M4 4v4h4M4 13a8 8 0 0 0 14.7 4M20 20v-4h-4"/>',
+  download:'<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>',
+  upload:'<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>',
+  share:'<circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="m8.2 10.8 7.6-3.6M8.2 13.2l7.6 3.6"/>',
+  warn:'<path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17v.5"/>',
+  calc:'<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8.5 11h.01M12 11h.01M15.5 11h.01M8.5 14.5h.01M12 14.5h.01M15.5 14.5h.01M8.5 18h.01M12 18h.01M15.5 18h.01"/>',
+  cable:'<path d="M4 18c4 0 4-12 8-12s4 12 8 12"/><circle cx="4" cy="18" r="1.6"/><circle cx="20" cy="18" r="1.6"/>',
+  wave:'<path d="M3 12c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0 3 4 4.5 0"/>',
+  chev:'<path d="m9 5 7 7-7 7"/>'
+};
+const ic = (n, extra='') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${ICONS[n]||''}</svg>`;
+
+function defaults(){
+  return {version:1, settings:{kmRate:0, hourRate:0, configured:false}, catalog:[], projects:[], meta:{lastBackup:null}};
+}
+function normalize(d){
+  const b = defaults();
+  if(!d || typeof d !== 'object') return b;
+  return {
+    version:1,
+    settings:{...b.settings, ...(d.settings||{})},
+    meta:{...b.meta, ...(d.meta||{})},
+    catalog:Array.isArray(d.catalog) ? d.catalog.filter(c=>c && c.name) : [],
+    projects:Array.isArray(d.projects) ? d.projects.filter(p=>p && p.id).map(p=>({
+      status:'wycena', notes:'', address:'', phone:'', distance:null, ...p,
+      items:Array.isArray(p.items) ? p.items : []
+    })) : []
+  };
+}
+function load(){
+  try{ const raw = localStorage.getItem(KEY); return raw ? normalize(JSON.parse(raw)) : defaults(); }
+  catch(e){ console.error(e); return defaults(); }
+}
+let db = load();
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch(e){ console.error(e); toast('Błąd zapisu danych!'); }
+}
+
+/* ================= Pomocnicze ================= */
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+const r2 = n => Math.round(((Number(n)||0) + Number.EPSILON) * 100) / 100;
+const moneyF = new Intl.NumberFormat('pl-PL', {style:'currency', currency:'PLN'});
+const numF = new Intl.NumberFormat('pl-PL', {maximumFractionDigits:2});
+const fm = n => moneyF.format(r2(n));
+const fn = n => numF.format(Number(n)||0);
+const inVal = n => (n===null || n===undefined || n==='') ? '' : String(r2(n)).replace('.', ',');
+function parseNum(v){
+  if(v===null || v===undefined) return null;
+  const s = String(v).replace(/\s/g,'').replace(',', '.');
+  if(s==='') return null;
+  const n = Number(s);
+  return Number.isFinite(n) ? n : null;
+}
+function todayISO(){ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return ''; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ł/g,'l');
+const statusLabel = k => (STATUSES.find(s=>s.k===k) || STATUSES[0]).l;
+const getProject = id => db.projects.find(p=>p.id===id);
+const touch = p => { p.updatedAt = new Date().toISOString(); };
+
+function itemTotal(it){
+  switch(it.type){
+    case 'travel': return r2((Number(it.km)||0) * (it.roundTrip===false ? 1 : 2) * (Number(it.rate)||0));
+    case 'labor':  return r2((Number(it.hours)||0) * (Number(it.rate)||0));
+    case 'part':   return r2((Number(it.price)||0) * (Number(it.qty)||0));
+  }
+  return 0;
+}
+function projectTotals(p){
+  const t = {travel:0, labor:0, part:0};
+  p.items.forEach(it => { if(t[it.type]!==undefined) t[it.type] = r2(t[it.type] + itemTotal(it)); });
+  t.all = r2(t.travel + t.labor + t.part);
+  return t;
+}
+
+let toastT;
+function toast(msg){
+  const el = $('#toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(()=>el.classList.remove('show'), 2200);
+}
+
+function confirmDlg(msg, okLabel='Usuń', danger=true){
+  return new Promise(res => {
+    const root = $('#dialog-root');
+    root.innerHTML = `<div class="dlg-back"><div class="dlg" role="alertdialog"><p>${esc(msg)}</p>
+      <div class="dlg-btns"><button class="btn ghost" data-r="0">Anuluj</button>
+      <button class="btn ${danger?'danger':'primary'}" data-r="1">${esc(okLabel)}</button></div></div></div>`;
+    root.onclick = e => {
+      const b = e.target.closest('[data-r]');
+      if(!b && e.target.classList.contains('dlg-back')){ root.innerHTML=''; res(false); return; }
+      if(b){ root.innerHTML=''; res(b.dataset.r==='1'); }
+    };
+  });
+}
+
+/* ================= Arkusz (bottom sheet) ================= */
+const sheetRoot = $('#sheet-root');
+let sheetOpen = false, sheetCloseRes = null, sheetTok = 0;
+
+function openSheet(title, body, opts={}){
+  sheetTok++;
+  sheetRoot.innerHTML = `<div class="backdrop"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="${esc(title)}">
+      <div class="grab"></div>
+      <div class="sheet-head"><h2>${esc(title)}</h2><button type="button" class="icon-btn" data-close aria-label="Zamknij">${ic('close')}</button></div>
+      <form class="sheet-body" novalidate autocomplete="off">${body}<button type="submit" hidden></button></form>
+      <div class="sheet-foot">${opts.onDelete ? `<button type="button" class="btn danger-ghost" data-del>${ic('trash')}Usuń</button>` : ''}${opts.onSave ? `<button type="button" class="btn primary" data-save>${esc(opts.saveLabel||'Zapisz')}</button>` : ''}</div>
+    </div>`;
+  if(!sheetOpen){ history.pushState({sheet:true}, ''); sheetOpen = true; }
+  document.body.classList.add('noscroll');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>sheetRoot.classList.add('open')));
+  const el = $('.sheet', sheetRoot), form = $('form', el);
+  $('.backdrop', sheetRoot).onclick = () => closeSheet();
+  $('[data-close]', el).onclick = () => closeSheet();
+  const doSave = async () => {
+    if(!opts.onSave) return;
+    const res = await opts.onSave(form);
+    if(res === false) return;
+    await closeSheet();
+    if(typeof res === 'function') res(); else render();
+  };
+  form.onsubmit = e => { e.preventDefault(); doSave(); };
+  const sb = $('[data-save]', el); if(sb) sb.onclick = doSave;
+  const db_ = $('[data-del]', el);
+  if(db_) db_.onclick = async () => {
+    const res = await opts.onDelete(form);
+    if(res === false) return;
+    await closeSheet();
+    if(typeof res === 'function') res(); else render();
+  };
+  if(opts.onMount) opts.onMount(form);
+  return form;
+}
+function hideSheet(){
+  sheetOpen = false;
+  sheetRoot.classList.remove('open');
+  document.body.classList.remove('noscroll');
+  const tok = ++sheetTok;
+  setTimeout(()=>{ if(tok===sheetTok && !sheetOpen) sheetRoot.innerHTML=''; }, 260);
+}
+function closeSheet(){
+  return new Promise(res => {
+    if(!sheetOpen){ res(); return; }
+    sheetCloseRes = res;
+    history.back();
+  });
+}
+window.addEventListener('popstate', () => {
+  if(sheetOpen){
+    hideSheet();
+    if(sheetCloseRes){ const r = sheetCloseRes; sheetCloseRes = null; setTimeout(r, 0); }
+  }
+});
+
+/* Pola formularza */
+function fieldNum(name, label, value, unit, opts={}){
+  return `<div class="field"><label for="f-${name}">${label}</label>
+    <div class="suffix"><input class="inp" id="f-${name}" name="${name}" inputmode="decimal" value="${esc(inVal(value))}" placeholder="${opts.ph||'0'}"><span>${unit}</span></div>
+    ${opts.hint?`<div class="hint">${opts.hint}</div>`:''}</div>`;
+}
+function fieldStepper(name, label, value, step, quick=[], unit=''){
+  return `<div class="field"><label for="f-${name}">${label}</label>
+    <div class="stepper"><button type="button" data-step="-${step}" aria-label="Mniej">−</button>
+    <input class="inp" id="f-${name}" name="${name}" inputmode="decimal" value="${esc(inVal(value))}">
+    <button type="button" data-step="${step}" aria-label="Więcej">+</button></div>
+    ${quick.length?`<div class="quick" data-quick="${name}">${quick.map(q=>`<button type="button" data-q="${q}">${fn(q)}${unit}</button>`).join('')}</div>`:''}</div>`;
+}
+function bindSteppers(form, onChange){
+  form.addEventListener('click', e => {
+    const b = e.target.closest('[data-step]');
+    if(b){
+      const inp = $('input', b.parentElement);
+      const step = Number(b.dataset.step);
+      let v = r2((parseNum(inp.value) || 0) + step);
+      if(v < 0) v = 0;
+      inp.value = inVal(v); onChange && onChange(); return;
+    }
+    const q = e.target.closest('[data-q]');
+    if(q){
+      const name = q.parentElement.dataset.quick;
+      form.elements[name].value = inVal(Number(q.dataset.q)); onChange && onChange();
+    }
+  });
+  form.addEventListener('input', () => onChange && onChange());
+}
+function markErr(form, name, msg){
+  const el = form.elements[name]; if(el){ el.classList.add('err'); el.focus(); el.addEventListener('input', ()=>el.classList.remove('err'), {once:true}); }
+  toast(msg); return false;
+}
+function syncQuick(form, name){
+  const v = parseNum(form.elements[name].value);
+  $$(`[data-quick="${name}"] [data-q]`, form).forEach(b => b.classList.toggle('on', Number(b.dataset.q)===v));
+}
+
+/* ================= Nawigacja ================= */
+const view = $('#view'), topbar = $('#topbar'), fab = $('#fab');
+let prevRoute = null;
+const ui = {q:'', status:'all', catQ:''};
+
+function parseRoute(){
+  const h = (location.hash || '#/projects').replace(/^#\/?/, '');
+  const [name, id] = h.split('/');
+  return {name: name || 'projects', id: id ? decodeURIComponent(id) : null};
+}
+function setTop({title, back=false, menu=null}){
+  topbar.className = 'topbar' + (back ? ' has-back' : '');
+  topbar.innerHTML = `<div class="topbar-in">
+    ${back ? `<button class="icon-btn" id="tb-back" aria-label="Wstecz">${ic('back')}</button>` : ''}
+    <h1>${esc(title)}</h1>
+    ${menu ? `<button class="icon-btn" id="tb-menu" aria-label="Więcej opcji">${ic('more')}</button>` : ''}</div>`;
+  if(back) $('#tb-back').onclick = back;
+  if(menu) $('#tb-menu').onclick = menu;
+}
+function setFab(label, fnc){
+  if(!label){ fab.hidden = true; fab.onclick = null; return; }
+  fab.hidden = false; fab.innerHTML = ic('plus') + esc(label); fab.onclick = fnc;
+}
+function render(){
+  const r = parseRoute();
+  $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === (r.name==='project' ? 'projects' : r.name)));
+  switch(r.name){
+    case 'project': viewProject(r.id); break;
+    case 'catalog': viewCatalog(); break;
+    case 'settings': viewSettings(); break;
+    case 'calc':
+      if(r.id==='power') viewCalcPower();
+      else if(r.id==='drop') viewCalcDrop();
+      else viewCalcList();
+      break;
+    default: viewProjects();
+  }
+  prevRoute = r;
+}
+window.addEventListener('hashchange', () => { if(!sheetOpen) { render(); } });
+/* Zakładki nie dokładają historii */
+$$('.tab').forEach(t => t.addEventListener('click', e => {
+  e.preventDefault();
+  const target = t.getAttribute('href');
+  if(location.hash === target){ render(); window.scrollTo(0,0); return; }
+  location.replace(target);
+  window.scrollTo(0,0);
+}));
+$$('[data-ic]').forEach(el => el.innerHTML = ic(el.dataset.ic));
+
+/* ================= Widok: lista projektów ================= */
+function viewProjects(){
+  setTop({title:'Projekty'});
+  setFab('Nowy projekt', () => projectForm());
+  view.onclick = null;
+  const counts = {all: db.projects.length};
+  STATUSES.forEach(s => counts[s.k] = db.projects.filter(p=>p.status===s.k).length);
+  const banner = !db.settings.configured ? `<a class="banner" href="#/settings">${ic('warn','style="width:22px;height:22px;flex:none;color:var(--warn)"')}<span><b>Ustaw stawki</b> – za kilometr i za godzinę pracy, zanim dodasz pierwsze pozycje.</span></a>` : '';
+  view.innerHTML = `${banner}
+    <div class="search">${ic('search')}<input id="q" type="search" placeholder="Szukaj: nazwa, adres, telefon" value="${esc(ui.q)}" enterkeyhint="search"></div>
+    <div class="chips">${[{k:'all',l:'Wszystkie'}, ...STATUSES].map(s => `<button class="chip ${ui.status===s.k?'on':''}" data-status="${s.k}">${s.l}<span class="cnt">${counts[s.k]}</span></button>`).join('')}</div>
+    <div id="plist"></div>`;
+  $('#q').oninput = e => { ui.q = e.target.value; renderProjectList(); };
+  $('.chips').onclick = e => { const b = e.target.closest('[data-status]'); if(b){ ui.status = b.dataset.status; viewProjects(); } };
+  renderProjectList();
+}
+function renderProjectList(){
+  const q = norm(ui.q.trim());
+  let list = db.projects.filter(p => ui.status==='all' || p.status===ui.status);
+  if(q) list = list.filter(p => norm([p.name, p.address, p.phone, p.notes].join(' ')).includes(q));
+  list.sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
+  const el = $('#plist');
+  if(!list.length){
+    el.innerHTML = `<div class="empty">${ic('folder')}<p>${db.projects.length ? 'Brak projektów spełniających kryteria.' : 'Nie masz jeszcze żadnych projektów.<br>Dodaj pierwszy przyciskiem „Nowy projekt”.'}</p></div>`;
+    return;
+  }
+  el.innerHTML = list.map(p => {
+    const t = projectTotals(p);
+    const sub = [p.address, p.distance!=null && p.distance!=='' ? `${fn(p.distance)} km` : ''].filter(Boolean).join(' · ');
+    return `<a class="card pcard" href="#/project/${encodeURIComponent(p.id)}">
+      <div class="pc-top"><div class="pc-name">${esc(p.name)}</div><div class="pc-sum">${fm(t.all)}</div></div>
+      ${sub ? `<div class="pc-sub">${esc(sub)}</div>` : ''}
+      <div class="pc-bot"><span class="badge s-${p.status}">${statusLabel(p.status)}</span><span class="muted">${p.items.length} poz. · ${fmtDate((p.updatedAt||'').slice(0,10))}</span></div></a>`;
+  }).join('');
+}
+
+/* ================= Formularz projektu ================= */
+function projectForm(p){
+  const isNew = !p;
+  const d = p || {name:'', address:'', phone:'', distance:null, status:'wycena'};
+  openSheet(isNew ? 'Nowy projekt' : 'Edytuj projekt', `
+    <div class="field"><label for="f-name">Nazwa projektu *</label><input class="inp" id="f-name" name="name" value="${esc(d.name)}" placeholder="np. Kowalski – rozdzielnia" enterkeyhint="next" autocapitalize="sentences"></div>
+    <div class="field"><label for="f-address">Adres</label><input class="inp" id="f-address" name="address" value="${esc(d.address)}" placeholder="opcjonalnie" autocapitalize="words"></div>
+    <div class="field"><label for="f-phone">Numer kontaktowy</label><input class="inp" id="f-phone" name="phone" type="tel" inputmode="tel" value="${esc(d.phone)}" placeholder="opcjonalnie"></div>
+    ${fieldNum('distance', 'Odległość (w jedną stronę)', d.distance, 'km', {ph:'opcjonalnie', hint:'Przyjazd liczony jest tam i z powrotem (× 2).'})}
+    <div class="field"><span class="flabel">Status</span><div class="seg" style="padding:0" data-seg>${STATUSES.map(s=>`<button type="button" class="s-${s.k} ${d.status===s.k?'on':''}" data-v="${s.k}">${s.l}</button>`).join('')}</div><input type="hidden" name="status" value="${d.status}"></div>
+  `, {
+    saveLabel: isNew ? 'Utwórz projekt' : 'Zapisz',
+    onMount: form => {
+      $('[data-seg]', form).onclick = e => {
+        const b = e.target.closest('[data-v]'); if(!b) return;
+        form.elements.status.value = b.dataset.v;
+        $$('[data-v]', form).forEach(x => x.classList.toggle('on', x===b));
+      };
+      if(isNew) setTimeout(()=>form.elements.name.focus(), 250);
+    },
+    onSave: async form => {
+      const name = form.elements.name.value.trim();
+      if(!name) return markErr(form, 'name', 'Podaj nazwę projektu');
+      const distRaw = form.elements.distance.value.trim();
+      const distance = parseNum(distRaw);
+      if(distRaw && (distance===null || distance<0)) return markErr(form, 'distance', 'Nieprawidłowa odległość');
+      const data = {name, address: form.elements.address.value.trim(), phone: form.elements.phone.value.trim(), distance, status: form.elements.status.value};
+      if(isNew){
+        const now = new Date().toISOString();
+        const np = {id: uid(), ...data, notes:'', items:[], createdAt: now, updatedAt: now};
+        db.projects.push(np); save();
+        return () => { location.hash = '/project/' + encodeURIComponent(np.id); };
+      }
+      const oldDist = p.distance;
+      Object.assign(p, data); touch(p); save();
+      const travels = p.items.filter(i => i.type==='travel' && i.km===oldDist);
+      if(distance!=null && oldDist!==distance && travels.length){
+        return async () => {
+          render();
+          if(await confirmDlg(`Zmieniono odległość na ${fn(distance)} km.\nZaktualizować też ${travels.length} ${travels.length===1?'przyjazd':'przyjazdy'} z ${fn(oldDist)} km?`, 'Aktualizuj', false)){
+            travels.forEach(t => t.km = distance); touch(p); save(); render(); toast('Zaktualizowano przyjazdy');
+          }
+        };
+      }
+    }
+  });
+}
+
+/* ================= Widok: projekt ================= */
+let notesT;
+function viewProject(id){
+  const p = getProject(id);
+  if(!p){ location.replace('#/projects'); return; }
+  const cameFromList = prevRoute && prevRoute.name === 'projects';
+  if(!prevRoute || prevRoute.name !== 'project' || prevRoute.id !== id) window.scrollTo(0,0);
+  setTop({title: p.name,
+    back: () => { if(cameFromList || history.state?.fromList) history.back(); else location.replace('#/projects'); },
+    menu: () => projectMenu(p)});
+  if(cameFromList) history.replaceState({fromList:true}, '');
+  setFab('Dodaj', () => addChooser(p));
+  const t = projectTotals(p);
+  const mapUrl = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.address||'');
+  view.innerHTML = `
+    <section class="card">
+      ${p.address ? `<a class="irow" href="${mapUrl}" target="_blank" rel="noopener">${ic('pin')}<span class="grow">${esc(p.address)}</span></a>` : ''}
+      ${p.phone ? `<a class="irow" href="tel:${esc(p.phone.replace(/[^\d+]/g,''))}">${ic('phone')}<span class="grow">${esc(p.phone)}</span></a>` : ''}
+      <div class="irow">${ic('road')}<span class="grow">${p.distance!=null && p.distance!=='' ? `${fn(p.distance)} km w jedną stronę` : '<span class="muted">Brak odległości</span>'}</span></div>
+      <div class="seg" data-setstatus>${STATUSES.map(s=>`<button class="s-${s.k} ${p.status===s.k?'on':''}" data-v="${s.k}">${s.l}</button>`).join('')}</div>
+    </section>
+    <section class="card summary">
+      <div class="sum-row"><span>Przyjazdy</span><span>${fm(t.travel)}</span></div>
+      <div class="sum-row"><span>Robocizna</span><span>${fm(t.labor)}</span></div>
+      <div class="sum-row"><span>Części</span><span>${fm(t.part)}</span></div>
+      <div class="sum-total"><span>Razem</span><b>${fm(t.all)}</b></div>
+    </section>
+    ${section(p, 'travel', t)}
+    ${section(p, 'labor', t)}
+    ${section(p, 'part', t)}
+    <section class="card notes"><div class="sec-head"><h3>Notatki</h3></div>
+      <textarea id="notes" placeholder="Opis usterki, ustalenia z klientem, uwagi…">${esc(p.notes)}</textarea></section>`;
+  view.onclick = e => {
+    const st = e.target.closest('[data-setstatus] [data-v]');
+    if(st){ p.status = st.dataset.v; touch(p); save(); viewProject(p.id); toast('Status: ' + statusLabel(p.status)); return; }
+    const add = e.target.closest('[data-add]');
+    if(add){ itemSheet(p, add.dataset.add); return; }
+    const ed = e.target.closest('[data-edit]');
+    if(ed){ const it = p.items.find(i=>i.id===ed.dataset.edit); if(it) itemSheet(p, it.type, it); }
+  };
+  $('#notes').oninput = e => {
+    clearTimeout(notesT);
+    const v = e.target.value;
+    notesT = setTimeout(() => { p.notes = v; touch(p); save(); }, 400);
+  };
+  $('#notes').onblur = e => { clearTimeout(notesT); if(p.notes !== e.target.value){ p.notes = e.target.value; touch(p); save(); } };
+}
+function itemsOf(p, type){
+  const list = p.items.filter(i => i.type===type);
+  if(type!=='part') list.sort((a,b) => (a.date||'').localeCompare(b.date||''));
+  return list;
+}
+function rowHtml(it){
+  let title, sub;
+  if(it.type==='travel'){
+    title = 'Przyjazd' + (it.date ? ' · ' + fmtDate(it.date) : '');
+    sub = `${fn(it.km)} km × ${it.roundTrip===false?1:2} × ${fm(it.rate)}/km`;
+  } else if(it.type==='labor'){
+    title = fmtDate(it.date) + (it.desc ? ' · ' + esc(it.desc) : '');
+    sub = `${fn(it.hours)} h × ${fm(it.rate)}/h`;
+  } else {
+    title = esc(it.name);
+    sub = `${fn(it.qty)} × ${fm(it.price)}`;
+  }
+  return `<button class="row" data-edit="${it.id}"><div class="row-main"><div class="row-title">${title}</div><div class="row-sub">${sub}</div></div><div class="row-amt">${fm(itemTotal(it))}</div></button>`;
+}
+function section(p, type, t){
+  const list = itemsOf(p, type);
+  return `<section class="card">
+    <div class="sec-head"><h3>${TYPES[type].many} <span class="muted">(${list.length})</span></h3>
+      <button class="btn-add" data-add="${type}">${ic('plus')}Dodaj</button></div>
+    ${list.length ? list.map(rowHtml).join('') : '<div class="empty-sm">Brak pozycji</div>'}
+    ${list.length ? `<div class="sec-sum"><span>Suma: ${TYPES[type].many.toLowerCase()}</span><span>${fm(t[type])}</span></div>` : ''}
+  </section>`;
+}
+
+function projectMenu(p){
+  openSheet(p.name, `<div class="menu-list">
+    <button type="button" data-a="edit">${ic('edit')}<span>Edytuj dane projektu<small>Nazwa, adres, telefon, odległość</small></span></button>
+    <button type="button" data-a="recalc">${ic('refresh')}<span>Przelicz wg aktualnych stawek<small>${fm(db.settings.kmRate)}/km · ${fm(db.settings.hourRate)}/h</small></span></button>
+    <button type="button" data-a="delete" class="danger">${ic('trash')}<span>Usuń projekt</span></button>
+  </div>`, {
+    onMount: form => {
+      form.onclick = async e => {
+        const b = e.target.closest('[data-a]'); if(!b) return;
+        if(b.dataset.a==='edit'){ projectForm(p); return; }
+        if(b.dataset.a==='recalc'){
+          await closeSheet();
+          const n = p.items.filter(i=>i.type!=='part').length;
+          if(!n){ toast('Brak przyjazdów i robocizny do przeliczenia'); return; }
+          if(await confirmDlg(`Ustawić aktualne stawki (${fm(db.settings.kmRate)}/km, ${fm(db.settings.hourRate)}/h) we wszystkich przyjazdach i robociźnie tego projektu?\nCeny części pozostaną bez zmian.`, 'Przelicz', false)){
+            p.items.forEach(i => { if(i.type==='travel') i.rate = db.settings.kmRate; if(i.type==='labor') i.rate = db.settings.hourRate; });
+            touch(p); save(); render(); toast('Przeliczono');
+          }
+          return;
+        }
+        if(b.dataset.a==='delete'){
+          await closeSheet();
+          if(await confirmDlg(`Usunąć projekt „${p.name}” wraz ze wszystkimi pozycjami?\nTej operacji nie można cofnąć.`)){
+            db.projects = db.projects.filter(x => x.id!==p.id); save();
+            location.replace('#/projects'); toast('Projekt usunięty');
+          }
+        }
+      };
+    }
+  });
+}
+
+function addChooser(p){
+  const km = p.distance;
+  openSheet('Dodaj do projektu', `<div class="choose">
+    <button type="button" data-t="travel"><span class="ci">${ic('car')}</span><span><b>Przyjazd</b><small>${km!=null&&km!=='' ? `${fn(km)} km × 2 × ${fm(db.settings.kmRate)} = ${fm(r2(km*2*db.settings.kmRate))}` : 'odległość × 2 × stawka/km'}</small></span></button>
+    <button type="button" data-t="labor"><span class="ci">${ic('clock')}</span><span><b>Robocizna</b><small>dziś, 4 h × ${fm(db.settings.hourRate)} = ${fm(4*db.settings.hourRate)}</small></span></button>
+    <button type="button" data-t="part"><span class="ci">${ic('bolt')}</span><span><b>Część</b><small>z katalogu lub własna</small></span></button>
+  </div>`, {
+    onMount: form => { form.onclick = e => { const b = e.target.closest('[data-t]'); if(b) itemSheet(p, b.dataset.t); }; }
+  });
+}
+
+/* ================= Pozycje projektu ================= */
+function itemSheet(p, type, it){
+  if(type==='travel') return travelSheet(p, it);
+  if(type==='labor') return laborSheet(p, it);
+  return partSheet(p, it);
+}
+function deleteItemHandler(p, it){
+  return async () => {
+    if(!await confirmDlg('Usunąć tę pozycję?')) return false;
+    p.items = p.items.filter(i => i.id!==it.id); touch(p); save(); toast('Usunięto');
+  };
+}
+function totalBox(id){ return `<div class="total-box"><span>Wartość<small id="${id}-f"></small></span><b id="${id}">0 zł</b></div>`; }
+
+function travelSheet(p, it){
+  const isNew = !it;
+  const d = it || {date: todayISO(), km: p.distance ?? null, rate: db.settings.kmRate};
+  openSheet(isNew ? 'Nowy przyjazd' : 'Przyjazd', `
+    <div class="field"><label for="f-date">Data</label><input class="inp" type="date" id="f-date" name="date" value="${esc(d.date||'')}"></div>
+    <div class="two">
+      ${fieldNum('km', 'Odległość', d.km, 'km')}
+      ${fieldNum('rate', 'Stawka', d.rate, 'zł/km')}
+    </div>
+    <div class="hint" style="margin:-6px 0 12px">Liczone tam i z powrotem: odległość × 2 × stawka.</div>
+    ${totalBox('tt')}
+  `, {
+    saveLabel: isNew ? 'Dodaj przyjazd' : 'Zapisz',
+    onDelete: isNew ? null : deleteItemHandler(p, it),
+    onMount: form => {
+      const upd = () => {
+        const km = parseNum(form.elements.km.value)||0, rate = parseNum(form.elements.rate.value)||0;
+        $('#tt', form).textContent = fm(km*2*rate);
+        $('#tt-f', form).textContent = `${fn(km)} km × 2 × ${fm(rate)}`;
+      };
+      form.addEventListener('input', upd); upd();
+    },
+    onSave: form => {
+      const km = parseNum(form.elements.km.value), rate = parseNum(form.elements.rate.value);
+      if(km===null || km<0) return markErr(form, 'km', 'Podaj odległość');
+      if(rate===null || rate<0) return markErr(form, 'rate', 'Podaj stawkę za km');
+      const data = {type:'travel', date: form.elements.date.value || todayISO(), km, rate, roundTrip:true};
+      if(isNew) p.items.push({id: uid(), ...data}); else Object.assign(it, data);
+      touch(p); save(); toast(isNew ? 'Dodano przyjazd' : 'Zapisano');
+    }
+  });
+}
+
+function laborSheet(p, it){
+  const isNew = !it;
+  const d = it || {date: todayISO(), hours: 4, rate: db.settings.hourRate, desc:''};
+  openSheet(isNew ? 'Nowa robocizna' : 'Robocizna', `
+    <div class="field"><label for="f-date">Data pracy</label><input class="inp" type="date" id="f-date" name="date" value="${esc(d.date||'')}"></div>
+    ${fieldStepper('hours', 'Czas pracy (godziny)', d.hours, 0.5, [1,2,4,6,8], ' h')}
+    ${fieldNum('rate', 'Stawka godzinowa', d.rate, 'zł/h')}
+    <div class="field"><label for="f-desc">Opis prac</label><input class="inp" id="f-desc" name="desc" value="${esc(d.desc||'')}" placeholder="opcjonalnie" autocapitalize="sentences"></div>
+    ${totalBox('lt')}
+  `, {
+    saveLabel: isNew ? 'Dodaj robociznę' : 'Zapisz',
+    onDelete: isNew ? null : deleteItemHandler(p, it),
+    onMount: form => {
+      const upd = () => {
+        const h = parseNum(form.elements.hours.value)||0, rate = parseNum(form.elements.rate.value)||0;
+        $('#lt', form).textContent = fm(h*rate);
+        $('#lt-f', form).textContent = `${fn(h)} h × ${fm(rate)}`;
+        syncQuick(form, 'hours');
+      };
+      bindSteppers(form, upd); upd();
+    },
+    onSave: form => {
+      const hours = parseNum(form.elements.hours.value), rate = parseNum(form.elements.rate.value);
+      if(hours===null || hours<=0) return markErr(form, 'hours', 'Podaj czas pracy');
+      if(rate===null || rate<0) return markErr(form, 'rate', 'Podaj stawkę godzinową');
+      const data = {type:'labor', date: form.elements.date.value || todayISO(), hours, rate, desc: form.elements.desc.value.trim()};
+      if(isNew) p.items.push({id: uid(), ...data}); else Object.assign(it, data);
+      touch(p); save(); toast(isNew ? 'Dodano robociznę' : 'Zapisano');
+    }
+  });
+}
+
+function partSheet(p, it){
+  const isNew = !it;
+  const d = it || {name:'', price:null, qty:1};
+  openSheet(isNew ? 'Nowa część' : 'Część', `
+    <div class="field"><label for="f-name">Nazwa części</label>
+      <input class="inp" id="f-name" name="name" value="${esc(d.name)}" placeholder="Wpisz lub wybierz z katalogu" autocapitalize="sentences" enterkeyhint="done">
+      <div class="sugg" id="sugg"></div></div>
+    ${fieldNum('price', 'Cena za szt.', d.price, 'zł')}
+    ${fieldStepper('qty', 'Ilość', d.qty, 1, [], '')}
+    <label class="check" id="savecat" hidden><input type="checkbox" name="savecat" checked> Zapisz też w katalogu części</label>
+    ${totalBox('pt')}
+  `, {
+    saveLabel: isNew ? 'Dodaj część' : 'Zapisz',
+    onDelete: isNew ? null : deleteItemHandler(p, it),
+    onMount: form => {
+      const nameEl = form.elements.name, sugg = $('#sugg', form), saveCat = $('#savecat', form);
+      let showSugg = isNew;
+      const exact = () => db.catalog.find(c => norm(c.name)===norm(nameEl.value.trim()));
+      const drawSugg = () => {
+        if(!showSugg){ sugg.hidden = true; return; }
+        sugg.hidden = false;
+        if(!db.catalog.length){ sugg.innerHTML = '<div class="sugg-empty">Katalog jest pusty – wpisz własną część. Możesz ją od razu zapisać w katalogu.</div>'; return; }
+        const q = norm(nameEl.value.trim());
+        const list = db.catalog.filter(c => !q || norm(c.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pl')).slice(0,50);
+        sugg.innerHTML = list.length ? list.map(c => `<button type="button" data-cid="${c.id}"><span class="sg-name">${esc(c.name)}</span><span class="sg-price">${fm(c.price)}</span></button>`).join('')
+          : '<div class="sugg-empty">Brak w katalogu – zostanie dodana jako własna część.</div>';
+      };
+      const upd = () => {
+        const price = parseNum(form.elements.price.value)||0, qty = parseNum(form.elements.qty.value)||0;
+        $('#pt', form).textContent = fm(price*qty);
+        $('#pt-f', form).textContent = `${fn(qty)} × ${fm(price)}`;
+        saveCat.hidden = !nameEl.value.trim() || !!exact();
+      };
+      nameEl.addEventListener('input', () => { showSugg = true; drawSugg(); });
+      nameEl.addEventListener('focus', () => { showSugg = true; drawSugg(); });
+      sugg.onclick = e => {
+        const b = e.target.closest('[data-cid]'); if(!b) return;
+        const c = db.catalog.find(x => x.id===b.dataset.cid); if(!c) return;
+        nameEl.value = c.name; form.elements.price.value = inVal(c.price);
+        showSugg = false; drawSugg(); upd();
+        if(document.activeElement) document.activeElement.blur();
+      };
+      bindSteppers(form, upd); drawSugg(); upd();
+    },
+    onSave: form => {
+      const name = form.elements.name.value.trim();
+      const price = parseNum(form.elements.price.value), qty = parseNum(form.elements.qty.value);
+      if(!name) return markErr(form, 'name', 'Podaj nazwę części');
+      if(price===null || price<0) return markErr(form, 'price', 'Podaj cenę');
+      if(qty===null || qty<=0) return markErr(form, 'qty', 'Podaj ilość');
+      const data = {type:'part', name, price, qty};
+      if(isNew) p.items.push({id: uid(), ...data}); else Object.assign(it, data);
+      const inCat = db.catalog.find(c => norm(c.name)===norm(name));
+      if(!inCat && form.elements.savecat.checked){ db.catalog.push({id: uid(), name, price}); }
+      touch(p); save();
+      toast((isNew ? 'Dodano część' : 'Zapisano') + (!inCat && form.elements.savecat.checked ? ' (+ katalog)' : ''));
+    }
+  });
+}
+
+/* ================= Widok: katalog ================= */
+function viewCatalog(){
+  setTop({title:'Katalog części'});
+  setFab('Nowa część', () => catalogForm());
+  view.onclick = null;
+  view.innerHTML = `<div class="search">${ic('search')}<input id="cq" type="search" placeholder="Szukaj części" value="${esc(ui.catQ)}" enterkeyhint="search"></div><div id="clist"></div>`;
+  $('#cq').oninput = e => { ui.catQ = e.target.value; renderCatalogList(); };
+  $('#clist').onclick = e => { const b = e.target.closest('[data-cid]'); if(b){ const c = db.catalog.find(x=>x.id===b.dataset.cid); if(c) catalogForm(c); } };
+  renderCatalogList();
+}
+function renderCatalogList(){
+  const q = norm(ui.catQ.trim());
+  const list = db.catalog.filter(c => !q || norm(c.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+  const el = $('#clist');
+  if(!list.length){
+    el.innerHTML = `<div class="empty">${ic('box')}<p>${db.catalog.length ? 'Nic nie znaleziono.' : 'Katalog jest pusty.<br>Dodaj części, których często używasz.'}</p></div>`;
+    return;
+  }
+  el.innerHTML = `<div class="small muted" style="margin:0 4px 8px">${list.length} ${list.length===1?'pozycja':(list.length%10>=2&&list.length%10<=4&&(list.length%100<10||list.length%100>=20)?'pozycje':'pozycji')}</div>
+    <section class="card">${list.map(c => `<button class="row" data-cid="${c.id}"><div class="row-main"><div class="row-title">${esc(c.name)}</div></div><div class="row-amt">${fm(c.price)}</div></button>`).join('')}</section>`;
+}
+function catalogForm(c){
+  const isNew = !c;
+  const d = c || {name:'', price:null};
+  openSheet(isNew ? 'Nowa część w katalogu' : 'Część w katalogu', `
+    <div class="field"><label for="f-name">Nazwa</label><input class="inp" id="f-name" name="name" value="${esc(d.name)}" placeholder="np. Wyłącznik nadprądowy B16" autocapitalize="sentences"></div>
+    ${fieldNum('price', 'Cena', d.price, 'zł')}
+    ${isNew ? '' : '<div class="hint">Zmiana ceny nie wpływa na części już dodane do projektów.</div>'}
+  `, {
+    saveLabel: isNew ? 'Dodaj do katalogu' : 'Zapisz',
+    onMount: form => { if(isNew) setTimeout(()=>form.elements.name.focus(), 250); },
+    onDelete: isNew ? null : async () => {
+      if(!await confirmDlg(`Usunąć „${c.name}” z katalogu?\nCzęści dodane już do projektów pozostaną.`)) return false;
+      db.catalog = db.catalog.filter(x => x.id!==c.id); save(); toast('Usunięto z katalogu');
+    },
+    onSave: form => {
+      const name = form.elements.name.value.trim(), price = parseNum(form.elements.price.value);
+      if(!name) return markErr(form, 'name', 'Podaj nazwę');
+      if(price===null || price<0) return markErr(form, 'price', 'Podaj cenę');
+      const dup = db.catalog.find(x => x.id!==(c&&c.id) && norm(x.name)===norm(name));
+      if(dup) return markErr(form, 'name', 'Taka część już jest w katalogu');
+      if(isNew) db.catalog.push({id: uid(), name, price}); else Object.assign(c, {name, price});
+      save(); toast(isNew ? 'Dodano do katalogu' : 'Zapisano');
+    }
+  });
+}
+
+/* ================= Kalkulatory ================= */
+const CALC_KEY = 'wyceny.calc.v1';
+const CALC_DEF = {
+  power:{U:400, cos:0.9, P:null, I:null, src:'P'},
+  drop:{U:230, cos:1, P:null, I:null, src:'P', S:2.5, L:null, mat:'cu'}
+};
+let calcState = (() => {
+  let saved = {};
+  try{ saved = JSON.parse(localStorage.getItem(CALC_KEY)) || {}; }catch(e){}
+  return {power:{...CALC_DEF.power, ...(saved.power||{})}, drop:{...CALC_DEF.drop, ...(saved.drop||{})}};
+})();
+function saveCalc(){ try{ localStorage.setItem(CALC_KEY, JSON.stringify(calcState)); }catch(e){} }
+
+const SQ3 = Math.sqrt(3);
+const DROP_LIMIT = 2; // dopuszczalny spadek napięcia [%]
+const f2 = n => new Intl.NumberFormat('pl-PL', {minimumFractionDigits:2, maximumFractionDigits:2}).format(n);
+const f3 = n => new Intl.NumberFormat('pl-PL', {maximumFractionDigits:3}).format(n);
+const inV = (n, d=2) => (n===null || n===undefined || !Number.isFinite(n)) ? '' : String(Math.round(n * 10**d) / 10**d).replace('.', ',');
+
+/* Konduktywność [m/(Ω·mm²)] */
+const GAMMA = {cu:56, al:34};
+const SECTIONS = [0.5, 0.75, 1, 1.5, 2.5, 4, 6, 10, 16, 25, 35, 50, 70, 95, 120, 150, 185, 240, 300];
+/* Obciążalność długotrwała Iz [A] – PN-HD 60364-5-52, metoda C (przewód na/w ścianie),
+   izolacja PVC 70°C, temp. otoczenia 30°C; klucz: liczba obciążonych żył */
+const IZ = {
+  cu:{
+    2:{1.5:19.5, 2.5:27, 4:36, 6:46, 10:63, 16:85, 25:112, 35:138, 50:168, 70:213, 95:258, 120:299, 150:344, 185:392, 240:461, 300:530},
+    3:{1.5:17.5, 2.5:24, 4:32, 6:41, 10:57, 16:76, 25:96, 35:119, 50:144, 70:184, 95:223, 120:259, 150:299, 185:341, 240:403, 300:464}
+  },
+  al:{
+    2:{2.5:21, 4:28, 6:36, 10:49, 16:66, 25:83, 35:103, 50:125, 70:160, 95:195, 120:226, 150:261, 185:298, 240:352, 300:406},
+    3:{2.5:18.5, 4:25, 6:32, 10:44, 16:59, 25:73, 35:90, 50:110, 70:140, 95:170, 120:197, 150:227, 185:259, 240:305, 300:351}
+  }
+};
+
+function subBack(parentHash){
+  const came = prevRoute && prevRoute.name === 'calc' && !prevRoute.id;
+  if(came) history.replaceState({fromParent:true}, '');
+  return () => { if(came || history.state?.fromParent) history.back(); else location.replace(parentHash); };
+}
+function cosFieldHtml(id, val){
+  return `<div class="field"><label for="${id}">Współczynnik mocy cos φ</label>
+    <input class="inp" id="${id}" inputmode="decimal" value="${inV(val)}">
+    <div class="quick" data-cosq>${[0.8,0.85,0.9,0.95,1].map(q=>`<button type="button" data-q="${q}" class="${val===q?'on':''}">${String(q).replace('.',',')}</button>`).join('')}</div></div>`;
+}
+/* Wspólna obsługa par pól Moc ↔ Prąd: ostatnio edytowane jest źródłem, drugie się oblicza */
+function bindPI(st, onChange){
+  const pEl = $('#c-P'), iEl = $('#c-I');
+  pEl.oninput = () => { st.src = 'P'; st.P = parseNum(pEl.value); onChange(); };
+  iEl.oninput = () => { st.src = 'I'; st.I = parseNum(iEl.value); onChange(); };
+}
+function showPI(st, P, I){
+  const pEl = $('#c-P'), iEl = $('#c-I');
+  const outEl = st.src==='P' ? iEl : pEl, inEl = st.src==='P' ? pEl : iEl;
+  inEl.classList.remove('calc-out'); outEl.classList.add('calc-out');
+  if(document.activeElement !== outEl) outEl.value = st.src==='P' ? inV(I, 2) : inV(P, 3);
+  $('#tag-P').textContent = st.src==='P' ? '' : 'obliczone';
+  $('#tag-I').textContent = st.src==='I' ? '' : 'obliczone';
+}
+function bindCos(st, onChange){
+  const el = $('#c-cos'), q = $('[data-cosq]');
+  const sync = () => $$('[data-q]', q).forEach(b => b.classList.toggle('on', Number(b.dataset.q)===st.cos));
+  el.oninput = () => { st.cos = parseNum(el.value); el.classList.toggle('err', !(st.cos>0 && st.cos<=1)); sync(); onChange(); };
+  q.onclick = e => { const b = e.target.closest('[data-q]'); if(!b) return; st.cos = Number(b.dataset.q); el.value = inV(st.cos); el.classList.remove('err'); sync(); onChange(); };
+}
+function bindSeg(name, onPick){
+  const el = $(`[data-seg="${name}"]`);
+  el.onclick = e => {
+    const b = e.target.closest('[data-v]'); if(!b) return;
+    $$('[data-v]', el).forEach(x => x.classList.toggle('on', x===b));
+    onPick(b.dataset.v);
+  };
+}
+const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
+
+/* ----- Lista kalkulatorów ----- */
+function viewCalcList(){
+  setTop({title:'Kalkulatory'});
+  setFab(null);
+  view.onclick = null;
+  view.innerHTML = `<div class="choose" style="margin-top:4px">
+    <a href="#/calc/power"><span class="ci">${ic('wave')}</span><span class="grow"><b>Moc i prąd – układ 3-fazowy</b><small>P = √3 · U · I · cos φ</small></span>${ic('chev')}</a>
+    <a href="#/calc/drop"><span class="ci">${ic('cable')}</span><span class="grow"><b>Spadek napięcia i prąd w przewodzie</b><small>Spadek napięcia, obciążalność, dobór przekroju</small></span>${ic('chev')}</a>
+  </div>`;
+}
+
+/* ----- Moc i prąd 3~ ----- */
+function viewCalcPower(){
+  const st = calcState.power;
+  setTop({title:'Moc i prąd 3~', back: subBack('#/calc')});
+  setFab(null);
+  view.onclick = null;
+  view.innerHTML = `
+    <section class="card card-pad formula">
+      <div class="f-main">P = √3 · U · I · cos φ</div>
+      <div class="f-main">I = P / (√3 · U · cos φ)</div>
+      <div class="hint">Wpisz moc albo prąd – druga wartość obliczy się automatycznie.</div>
+    </section>
+    <section class="card card-pad">
+      <div class="field"><span class="flabel">Napięcie międzyfazowe U</span>
+        <div class="segp" data-seg="U">${[380,400,440].map(v=>`<button type="button" data-v="${v}" class="${st.U===v?'on':''}">${v} V</button>`).join('')}</div></div>
+      ${cosFieldHtml('c-cos', st.cos)}
+      <div class="two">
+        <div class="field"><label for="c-P">Moc czynna P<span class="lbl-tag" id="tag-P"></span></label>
+          <div class="suffix"><input class="inp" id="c-P" inputmode="decimal" placeholder="0" value="${st.src==='P'?inV(st.P,3):''}"><span>kW</span></div></div>
+        <div class="field"><label for="c-I">Prąd I<span class="lbl-tag" id="tag-I"></span></label>
+          <div class="suffix"><input class="inp" id="c-I" inputmode="decimal" placeholder="0" value="${st.src==='I'?inV(st.I,2):''}"><span>A</span></div></div>
+      </div>
+    </section>
+    <section class="card" id="res"></section>`;
+  const upd = () => {
+    const cosOk = st.cos>0 && st.cos<=1;
+    const k = SQ3 * st.U * st.cos;
+    let P = null, I = null;
+    if(cosOk){
+      if(st.src==='P'){ P = st.P; I = (P!=null && P>=0) ? P*1000/k : null; }
+      else { I = st.I; P = (I!=null && I>=0) ? k*I/1000 : null; }
+    }
+    showPI(st, P, I);
+    const res = $('#res');
+    if(!cosOk){ res.innerHTML = `<div class="set-row" style="color:var(--danger)">cos φ musi być w zakresie 0–1.</div>`; saveCalc(); return; }
+    if(P==null || I==null){ res.innerHTML = `<div class="set-row muted">Wpisz moc [kW] albo prąd [A].</div>`; saveCalc(); return; }
+    const S = SQ3 * st.U * I / 1000;
+    const Q = S * Math.sqrt(Math.max(0, 1 - st.cos*st.cos));
+    res.innerHTML = `<div class="res-head">Wynik</div>
+      <div class="res-big"><span>Prąd I</span><b>${f2(I)} A</b></div>
+      <div class="res-big" style="padding-bottom:12px"><span>Moc czynna P</span><b style="font-size:22px">${f3(P)} kW</b></div>
+      ${kv('Moc pozorna S = √3·U·I', f2(S) + ' kVA')}
+      ${kv('Moc bierna Q = S·sin φ', f2(Q) + ' kvar')}
+      ${kv('Napięcie / cos φ', `${st.U} V / ${String(st.cos).replace('.',',')}`)}`;
+    saveCalc();
+  };
+  bindSeg('U', v => { st.U = Number(v); upd(); });
+  bindCos(st, upd);
+  bindPI(st, upd);
+  upd();
+}
+
+/* ----- Spadek napięcia i prąd w przewodzie ----- */
+function dropCompute(st, S){
+  const sys = st.U<=24 ? 'dc' : (st.U===230 ? '1f' : '3f');
+  const cos = sys==='dc' ? 1 : st.cos;
+  const out = {sys, cos, P:null, I:null};
+  if(!(cos>0 && cos<=1)) { out.cosErr = true; return out; }
+  const k = (sys==='3f' ? SQ3 : 1) * st.U * cos;
+  if(st.src==='P'){ out.P = st.P; out.I = (st.P!=null && st.P>=0) ? st.P*1000/k : null; }
+  else { out.I = st.I; out.P = (st.I!=null && st.I>=0) ? k*st.I/1000 : null; }
+  out.Iz = (IZ[st.mat][sys==='3f' ? 3 : 2] || {})[S] ?? null;
+  if(out.I==null || !(st.L>0) || !(S>0)) return out;
+  const R = st.L / (GAMMA[st.mat] * S);                // rezystancja jednej żyły [Ω]
+  out.R = R;
+  out.dU = (sys==='3f' ? SQ3 : 2) * out.I * R * cos;     // spadek napięcia [V]
+  out.dUp = out.dU / st.U * 100;                          // [%]
+  out.loss = (sys==='3f' ? 3 : 2) * out.I * out.I * R;    // straty mocy [W]
+  out.Uend = st.U - out.dU;
+  return out;
+}
+function viewCalcDrop(){
+  const st = calcState.drop;
+  setTop({title:'Spadek napięcia', back: subBack('#/calc')});
+  setFab(null);
+  view.onclick = null;
+  const volt = [{v:12,s:'DC'},{v:24,s:'DC'},{v:230,s:'1-faz.'},{v:400,s:'3-faz.'}];
+  view.innerHTML = `
+    <section class="card card-pad">
+      <div class="field"><span class="flabel">Napięcie</span>
+        <div class="segp" data-seg="U">${volt.map(o=>`<button type="button" data-v="${o.v}" class="${st.U===o.v?'on':''}">${o.v} V<small>${o.s}</small></button>`).join('')}</div></div>
+      <div id="cos-wrap">${cosFieldHtml('c-cos', st.cos)}</div>
+      <div class="two">
+        <div class="field"><label for="c-P">Moc P<span class="lbl-tag" id="tag-P"></span></label>
+          <div class="suffix"><input class="inp" id="c-P" inputmode="decimal" placeholder="0" value="${st.src==='P'?inV(st.P,3):''}"><span>kW</span></div></div>
+        <div class="field"><label for="c-I">Prąd I<span class="lbl-tag" id="tag-I"></span></label>
+          <div class="suffix"><input class="inp" id="c-I" inputmode="decimal" placeholder="0" value="${st.src==='I'?inV(st.I,2):''}"><span>A</span></div></div>
+      </div>
+      <div class="two">
+        <div class="field"><label for="c-S">Przekrój</label>
+          <select class="inp" id="c-S">${SECTIONS.map(x=>`<option value="${x}" ${st.S===x?'selected':''}>${String(x).replace('.',',')} mm²</option>`).join('')}</select></div>
+        <div class="field"><label for="c-L">Długość trasy</label>
+          <div class="suffix"><input class="inp" id="c-L" inputmode="decimal" placeholder="0" value="${inV(st.L,1)}"><span>m</span></div></div>
+      </div>
+      <div class="field" style="margin-bottom:0"><span class="flabel">Materiał żył</span>
+        <div class="segp" data-seg="mat"><button type="button" data-v="cu" class="${st.mat==='cu'?'on':''}">Miedź Cu<small>γ = 56</small></button><button type="button" data-v="al" class="${st.mat==='al'?'on':''}">Aluminium Al<small>γ = 34</small></button></div></div>
+    </section>
+    <section class="card" id="res"></section>
+    <details class="card"><summary>Wzory i założenia</summary><div class="fx">
+      <div><b>Prąd:</b> 3-faz. <code>I = P / (√3·U·cos φ)</code>, 1-faz. <code>I = P / (U·cos φ)</code>, DC <code>I = P / U</code></div>
+      <div style="margin-top:6px"><b>Spadek napięcia:</b></div>
+      <div>3-faz.: <code>ΔU = √3 · L · I · cos φ / (γ · S)</code></div>
+      <div>1-faz.: <code>ΔU = 2 · L · I · cos φ / (γ · S)</code></div>
+      <div>DC: <code>ΔU = 2 · L · I / (γ · S)</code></div>
+      <div><code>ΔU% = ΔU / U · 100</code>, dopuszczalny spadek: ${DROP_LIMIT}%</div>
+      <div style="margin-top:6px"><b>Straty mocy:</b> <code>ΔP = n · I² · L / (γ · S)</code>, n = 3 (3-faz.) lub 2</div>
+      <div style="margin-top:6px">L – długość trasy (w jedną stronę), S – przekrój, γ – konduktywność: Cu 56, Al 34 m/(Ω·mm²). Pominięto reaktancję przewodu (dokładne dla przekrojów do ok. 50 mm²).</div>
+      <div style="margin-top:6px"><b>Obciążalność Iz</b> – orientacyjnie wg PN-HD 60364-5-52, metoda C (przewód na ścianie), izolacja PVC 70°C, otoczenie 30°C, 2 obciążone żyły (DC, 1-faz.) lub 3 (3-faz.). Dla innych warunków ułożenia stosuj współczynniki poprawkowe.</div>
+    </div></details>`;
+
+  const upd = () => {
+    const r = dropCompute(st, st.S);
+    $('#cos-wrap').hidden = r.sys==='dc';
+    showPI(st, r.P, r.I);
+    const res = $('#res');
+    saveCalc();
+    if(r.cosErr){ res.innerHTML = `<div class="set-row" style="color:var(--danger)">cos φ musi być w zakresie 0–1.</div>`; return; }
+    if(r.I==null){ res.innerHTML = `<div class="set-row muted">Wpisz moc [kW] albo prąd [A].</div>`; return; }
+    if(r.dU==null){ res.innerHTML = `<div class="res-head">Wynik</div><div class="res-big" style="padding-bottom:12px"><span>Prąd I</span><b>${f2(r.I)} A</b></div><div class="set-row muted">Wpisz długość trasy, aby policzyć spadek napięcia.</div>`; return; }
+    const okDU = r.dUp <= DROP_LIMIT;
+    const okIz = r.Iz==null ? null : r.I <= r.Iz;
+    // Najmniejszy przekrój spełniający oba warunki
+    let rec = null;
+    for(const S of SECTIONS){
+      const x = dropCompute(st, S);
+      if(x.Iz==null) continue;
+      if(x.dUp <= DROP_LIMIT && x.I <= x.Iz){ rec = {S, dUp:x.dUp, Iz:x.Iz}; break; }
+    }
+    const sysTxt = r.sys==='dc' ? 'DC' : (r.sys==='1f' ? '1-fazowy' : '3-fazowy');
+    res.innerHTML = `<div class="res-head">Wynik · układ ${sysTxt}</div>
+      <div class="res-big ${okIz===null?'':(okIz?'ok':'bad')}"><span>Obciążalność Iz<small class="muted" style="display:block;font-size:12px">orientacyjnie, metoda C</small></span><b>${r.Iz==null ? '—' : fn(r.Iz) + ' A'}</b></div>
+      <div style="padding:6px 16px 12px"><span class="pill ${okDU?'ok':'bad'}">${okDU ? `✓ spadek ≤ ${DROP_LIMIT}% OK` : `✗ spadek > ${DROP_LIMIT}%`}</span>
+        ${okIz===null ? '' : ` <span class="pill ${okIz?'ok':'bad'}">${okIz ? '✓ obciążalność OK' : '✗ przekroczona obciążalność'}</span>`}</div>
+      ${kv('Spadek napięcia ΔU', f2(r.dUp) + ' % · ' + f2(r.dU) + ' V')}
+      ${kv('Napięcie na końcu przewodu', f2(r.Uend) + ' V')}
+      ${kv('Prąd I', f2(r.I) + ' A')}
+      ${kv('Moc P', f3(r.P) + ' kW')}
+      ${kv('Rezystancja żyły R', new Intl.NumberFormat('pl-PL',{maximumFractionDigits:4}).format(r.R) + ' Ω')}
+      ${kv('Straty mocy w przewodzie', f2(r.loss) + ' W')}
+      <div style="height:12px"></div>
+      ${rec ? (rec.S===st.S ? `<div class="recom"><span class="grow">Wybrany przekrój jest najmniejszym spełniającym oba warunki.</span></div>`
+          : `<div class="recom"><span class="grow">Najmniejszy przekrój spełniający warunki: <b>${String(rec.S).replace('.',',')} mm²</b><br><span class="small muted">ΔU ${f2(rec.dUp)} %, Iz ${fn(rec.Iz)} A</span></span><button type="button" class="btn primary" id="apply-rec">Ustaw</button></div>`)
+        : `<div class="recom"><span class="grow">Żaden przekrój do 300 mm² nie spełnia warunków – skróć trasę lub podziel obwód.</span></div>`}`;
+    const ab = $('#apply-rec');
+    if(ab) ab.onclick = () => { st.S = rec.S; $('#c-S').value = String(rec.S); upd(); };
+  };
+  bindSeg('U', v => { st.U = Number(v); upd(); });
+  bindSeg('mat', v => { st.mat = v; upd(); });
+  bindCos(st, upd);
+  bindPI(st, upd);
+  $('#c-S').onchange = e => { st.S = Number(e.target.value); upd(); };
+  $('#c-L').oninput = e => { st.L = parseNum(e.target.value); upd(); };
+  upd();
+}
+
+/* ================= Widok: ustawienia ================= */
+function viewSettings(){
+  setTop({title:'Ustawienia'});
+  setFab(null);
+  view.onclick = null;
+  const s = db.settings;
+  let canShare = false;
+  try{ canShare = !!(navigator.canShare && window.File && navigator.canShare({files:[new File(['{}'], 'a.json', {type:'application/json'})]})); }catch(e){}
+  const lb = db.meta.lastBackup;
+  view.innerHTML = `
+    <div class="sec-title">Stawki</div>
+    <section class="card"><form id="rates" class="card-pad" novalidate>
+      ${fieldNum('kmRate', 'Stawka za kilometr', s.configured ? s.kmRate : null, 'zł/km', {hint:'Przyjazd = odległość × 2 × stawka za km'})}
+      ${fieldNum('hourRate', 'Stawka godzinowa', s.configured ? s.hourRate : null, 'zł/h', {hint:'Robocizna = czas pracy × stawka godzinowa'})}
+      <button class="btn primary block" type="submit">Zapisz stawki</button>
+      <div class="hint">Nowe stawki dotyczą nowych pozycji. Istniejące projekty możesz przeliczyć z menu projektu (⋮).</div>
+    </form></section>
+
+    <div class="sec-title">Kopia zapasowa</div>
+    <section class="card">
+      <div class="kv"><span>Ostatnia kopia</span><b>${lb ? fmtDate(lb.slice(0,10)) : 'nigdy'}</b></div>
+      <div class="set-row small muted">Dane są zapisane tylko w tym telefonie. Rób regularnie kopię i trzymaj ją np. na Dysku Google – przyda się przy zmianie telefonu lub wyczyszczeniu przeglądarki.</div>
+      <div class="btns" style="padding-top:4px">
+        ${canShare ? `<button class="btn primary" id="b-share">${ic('share')}Udostępnij kopię (np. na Dysk)</button>` : ''}
+        <button class="btn ${canShare?'ghost':'primary'}" id="b-export">${ic('download')}Zapisz kopię do pliku</button>
+        <button class="btn ghost" id="b-import">${ic('upload')}Wczytaj kopię z pliku</button>
+        <input type="file" id="f-import" accept=".json,application/json" hidden>
+      </div>
+    </section>
+
+    <div class="sec-title">Informacje</div>
+    <section class="card">
+      <div class="kv"><span>Projekty</span><b>${db.projects.length}</b></div>
+      <div class="kv"><span>Części w katalogu</span><b>${db.catalog.length}</b></div>
+      <div class="kv"><span>Trwały zapis danych</span><b id="persist">…</b></div>
+      <div class="kv"><span>Wersja aplikacji</span><b>${APP_VERSION}</b></div>
+    </section>`;
+
+  $('#rates').onsubmit = e => {
+    e.preventDefault();
+    const form = e.target;
+    const km = parseNum(form.elements.kmRate.value), hr = parseNum(form.elements.hourRate.value);
+    if(km===null || km<0) return markErr(form, 'kmRate', 'Podaj stawkę za km');
+    if(hr===null || hr<0) return markErr(form, 'hourRate', 'Podaj stawkę godzinową');
+    db.settings = {...db.settings, kmRate: km, hourRate: hr, configured: true}; save();
+    document.activeElement && document.activeElement.blur();
+    toast('Zapisano stawki');
+  };
+  const fileName = () => `el_fuszka-kopia-${todayISO()}.json`;
+  const backupBlob = () => new Blob([JSON.stringify({...db, exportedAt: new Date().toISOString(), app:'el_fuszka'}, null, 2)], {type:'application/json'});
+  const markBackup = () => { db.meta.lastBackup = new Date().toISOString(); save(); viewSettings(); };
+  $('#b-export').onclick = () => {
+    const url = URL.createObjectURL(backupBlob());
+    const a = document.createElement('a'); a.href = url; a.download = fileName();
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2000);
+    markBackup(); toast('Kopia zapisana w Pobranych');
+  };
+  if(canShare) $('#b-share').onclick = async () => {
+    try{
+      await navigator.share({files:[new File([backupBlob()], fileName(), {type:'application/json'})], title:'Kopia – el_Fuszka'});
+      markBackup(); toast('Kopia udostępniona');
+    }catch(err){ if(err && err.name!=='AbortError') toast('Nie udało się udostępnić'); }
+  };
+  $('#b-import').onclick = () => $('#f-import').click();
+  $('#f-import').onchange = async e => {
+    const f = e.target.files[0]; e.target.value = '';
+    if(!f) return;
+    try{
+      const data = JSON.parse(await f.text());
+      if(!data || !Array.isArray(data.projects) || !Array.isArray(data.catalog)) throw new Error('format');
+      const n = normalize(data);
+      if(!await confirmDlg(`Wczytać kopię z pliku?\n\nW pliku: ${n.projects.length} projektów, ${n.catalog.length} części w katalogu.\nObecne dane w telefonie (${db.projects.length} projektów) zostaną ZASTĄPIONE.`, 'Wczytaj', true)) return;
+      db = n; save(); viewSettings(); toast('Wczytano kopię');
+    }catch(err){ console.error(err); toast('To nie jest prawidłowy plik kopii'); }
+  };
+  const pe = $('#persist');
+  if(navigator.storage && navigator.storage.persisted){
+    navigator.storage.persisted().then(v => { pe.textContent = v ? 'tak' : 'nie (zainstaluj aplikację)'; }).catch(()=>pe.textContent='—');
+  } else pe.textContent = '—';
+}
+
+/* ================= Start ================= */
+if(navigator.storage && navigator.storage.persist){ navigator.storage.persist().catch(()=>{}); }
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW', err)));
+}
+render();
+</script>
+</body>
+</html>
