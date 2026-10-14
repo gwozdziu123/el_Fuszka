@@ -3,8 +3,6 @@
 Aplikacja na telefon (PWA) do prowadzenia projektów usług elektrycznych i ich wyceny.
 Działa bez internetu, dane są zapisane w telefonie.
 
-https://gwozdziu123.github.io/el_Fuszka/
-
 ## Pliki
 
 | Plik | Do czego |
@@ -14,6 +12,15 @@ https://gwozdziu123.github.io/el_Fuszka/
 | `sw.js` | działanie offline |
 | `icons/` | ikony aplikacji |
 
+## Publikacja na GitHub Pages (jednorazowo, ok. 5 minut)
+
+1. Załóż darmowe konto na https://github.com.
+2. Kliknij **New repository**, nazwij je np. `el_fuszka`, ustaw **Public**, kliknij **Create repository**.
+3. Kliknij **uploading an existing file** i przeciągnij wszystkie pliki z tego folderu
+   (`index.html`, `manifest.webmanifest`, `sw.js` i folder `icons`). Kliknij **Commit changes**.
+4. Wejdź w **Settings → Pages**. W polu **Branch** wybierz `main`, folder `/ (root)`, kliknij **Save**.
+5. Po 1–2 minutach aplikacja będzie dostępna pod adresem
+   `https://<twoja-nazwa-użytkownika>.github.io/el_fuszka/`.
 
 ## Instalacja na telefonie
 
@@ -35,6 +42,25 @@ Po instalacji aplikacja otwiera się z ikony jak zwykła aplikacja i działa off
 - **Część** = cena × ilość
 - Cena pozycji zapisuje się w chwili dodania. Zmiana stawek lub cen w katalogu nie zmienia
   starych wycen. Projekt można przeliczyć według aktualnych stawek z menu ⋮ w projekcie.
+
+## Import / eksport katalogu części
+
+W zakładce **Katalog** → menu **⋮** u góry:
+- **Eksportuj do pliku CSV** – zapisuje katalog jako `el_fuszka-katalog-RRRR-MM-DD.csv` (otwiera się w Excelu).
+  Przy pustym katalogu zapisuje pusty wzór do uzupełnienia.
+- **Udostępnij katalog** – wysyła plik np. mailem lub na Dysk Google.
+- **Importuj z pliku** – wczytuje CSV lub JSON (także pełną kopię zapasową – brany jest tylko katalog).
+  Do wyboru: *dodaj nowe i zaktualizuj ceny* albo *zastąp cały katalog*.
+
+Format CSV: dwie kolumny `Nazwa;Cena`, pierwszy wiersz to nagłówek, cena z przecinkiem, np.:
+
+```
+Nazwa;Cena
+Wyłącznik nadprądowy B16;18,50
+Przewód YDY 3x2,5;3,20
+```
+
+Części dodane już do projektów nie zmieniają się przy imporcie.
 
 ## Kalkulatory
 
