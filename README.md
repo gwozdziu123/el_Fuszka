@@ -3,6 +3,8 @@
 Aplikacja na telefon (PWA) do prowadzenia projektów usług elektrycznych i ich wyceny.
 Działa bez internetu, dane są zapisane w telefonie.
 
+https://gwozdziu123.github.io/el_Fuszka/
+
 ## Pliki
 
 | Plik | Do czego |
@@ -12,15 +14,6 @@ Działa bez internetu, dane są zapisane w telefonie.
 | `sw.js` | działanie offline |
 | `icons/` | ikony aplikacji |
 
-## Publikacja na GitHub Pages (jednorazowo, ok. 5 minut)
-
-1. Załóż darmowe konto na https://github.com.
-2. Kliknij **New repository**, nazwij je np. `el_fuszka`, ustaw **Public**, kliknij **Create repository**.
-3. Kliknij **uploading an existing file** i przeciągnij wszystkie pliki z tego folderu
-   (`index.html`, `manifest.webmanifest`, `sw.js` i folder `icons`). Kliknij **Commit changes**.
-4. Wejdź w **Settings → Pages**. W polu **Branch** wybierz `main`, folder `/ (root)`, kliknij **Save**.
-5. Po 1–2 minutach aplikacja będzie dostępna pod adresem
-   `https://<twoja-nazwa-użytkownika>.github.io/el_fuszka/`.
 
 ## Instalacja na telefonie
 
