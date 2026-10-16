@@ -3,8 +3,6 @@
 Aplikacja na telefon (PWA) do prowadzenia projektów usług elektrycznych i ich wyceny.
 Działa bez internetu, dane są zapisane w telefonie.
 
-https://gwozdziu123.github.io/el_Fuszka/
-
 ## Pliki
 
 | Plik | Do czego |
@@ -64,7 +62,17 @@ Przewód YDY 3x2,5;3,20
 
 Części dodane już do projektów nie zmieniają się przy imporcie.
 
-## Kalkulatory
+## Narzędzia
+
+Zakładka **Narzędzia** (dolny pasek) zawiera kalkulatory oraz **Uprawnienia SEP**.
+
+### Uprawnienia SEP
+
+Miejsce na świadectwa kwalifikacyjne. **Nowe uprawnienie** → tytuł (np. „SEP E1 – eksploatacja do 1 kV”)
+i opis (np. nr świadectwa, zakres, data ważności). Na liście tytuł jest pogrubiony, opis pod spodem.
+Kliknięcie uprawnienia pozwala je edytować lub usunąć. Uprawnienia są zapisywane w kopii zapasowej.
+
+### Kalkulatory
 
 - **Moc i prąd – układ 3-fazowy:** `P = √3 · U · I · cos φ`, `I = P / (√3 · U · cos φ)`.
   Napięcie 380 / 400 / 440 V. Wpisz moc albo prąd, a druga wartość obliczy się sama. Dodatkowo
