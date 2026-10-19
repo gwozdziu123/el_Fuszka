@@ -3,8 +3,6 @@
 Aplikacja na telefon (PWA) do prowadzenia projektów usług elektrycznych i ich wyceny.
 Działa bez internetu, dane są zapisane w telefonie.
 
-https://gwozdziu123.github.io/el_Fuszka/
-
 ## Pliki
 
 | Plik | Do czego |
@@ -14,6 +12,15 @@ https://gwozdziu123.github.io/el_Fuszka/
 | `sw.js` | działanie offline |
 | `icons/` | ikony aplikacji |
 
+## Publikacja na GitHub Pages (jednorazowo, ok. 5 minut)
+
+1. Załóż darmowe konto na https://github.com.
+2. Kliknij **New repository**, nazwij je np. `el_fuszka`, ustaw **Public**, kliknij **Create repository**.
+3. Kliknij **uploading an existing file** i przeciągnij wszystkie pliki z tego folderu
+   (`index.html`, `manifest.webmanifest`, `sw.js` i folder `icons`). Kliknij **Commit changes**.
+4. Wejdź w **Settings → Pages**. W polu **Branch** wybierz `main`, folder `/ (root)`, kliknij **Save**.
+5. Po 1–2 minutach aplikacja będzie dostępna pod adresem
+   `https://<twoja-nazwa-użytkownika>.github.io/el_fuszka/`.
 
 ## Instalacja na telefonie
 
@@ -67,9 +74,9 @@ Kliknięcie uprawnienia pozwala je edytować lub usunąć. Uprawnienia są zapis
 
 ### Kalkulatory
 
-- **Moc i prąd – układ 3-fazowy:** `P = √3 · U · I · cos φ`, `I = P / (√3 · U · cos φ)`.
-  Napięcie 380 / 400 / 440 V. Wpisz moc albo prąd, a druga wartość obliczy się sama. Dodatkowo
-  pokazuje moc pozorną S i bierną Q.
+- **Moc i prąd 1 oraz 3 fazy:** napięcie 230 V (1-faz.) lub 400 V (3-faz.).
+  3-faz.: `P = √3 · U · I · cos φ`, `I = P / (√3 · U · cos φ)`; 1-faz.: `P = U · I · cos φ`, `I = P / (U · cos φ)`.
+  Wpisz moc albo prąd, a druga wartość obliczy się sama. Dodatkowo pokazuje moc pozorną S i bierną Q.
 - **Spadek napięcia i prąd w przewodzie:** napięcie 12 V DC / 24 V DC / 230 V (1-faz.) / 400 V (3-faz.),
   moc lub prąd, cos φ, przekrój, długość trasy, Cu (γ = 56) / Al (γ = 34). Dopuszczalny spadek napięcia: stałe 2%.
   - 3-faz.: `ΔU = √3 · L · I · cos φ / (γ · S)`, 1-faz.: `ΔU = 2 · L · I · cos φ / (γ · S)`, DC: `ΔU = 2 · L · I / (γ · S)`
