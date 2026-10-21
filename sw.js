@@ -1,6 +1,6 @@
 /* Service worker – działanie offline.
    Po każdej zmianie plików aplikacji podnieś numer wersji poniżej. */
-const CACHE = 'el_fuszka-v1.3.2';
+const CACHE = 'el_fuszka-v1.5.0';
 const ASSETS = [
   './',
   './index.html',
@@ -8,7 +8,10 @@ const ASSETS = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-512.png',
-  './icons/apple-touch-icon.png'
+  './icons/apple-touch-icon.png',
+  './libs/jspdf.umd.min.js',
+  './libs/jspdf.plugin.autotable.min.js',
+  './libs/fonts.js'
 ];
 
 self.addEventListener('install', e => {

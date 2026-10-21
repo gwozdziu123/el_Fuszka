@@ -263,9 +263,9 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:linear-gradi
 <nav class="tabbar">
   <div class="tabbar-in">
     <a class="tab" data-tab="projects" href="#/projects"><span class="tab-ic" data-ic="folder"></span>Projekty</a>
+    <a class="tab" data-tab="quotes" href="#/quotes"><span class="tab-ic" data-ic="doc"></span>Wyceny</a>
     <a class="tab" data-tab="catalog" href="#/catalog"><span class="tab-ic" data-ic="box"></span>Katalog</a>
     <a class="tab" data-tab="calc" href="#/calc"><span class="tab-ic" data-ic="tool"></span>Narzędzia</a>
-    <a class="tab" data-tab="settings" href="#/settings"><span class="tab-ic" data-ic="gear"></span>Ustawienia</a>
   </div>
 </nav>
 <div id="sheet-root"></div>
@@ -275,7 +275,7 @@ select.inp{appearance:none;-webkit-appearance:none;background-image:linear-gradi
 <script>
 'use strict';
 /* ================= Stałe i dane ================= */
-const APP_VERSION = '1.3.2';
+const APP_VERSION = '1.5.0';
 const KEY = 'wyceny.data.v1';
 const STATUSES = [
   {k:'wycena', l:'Wycena'},
@@ -315,13 +315,15 @@ const ICONS = {
   cable:'<path d="M4 18c4 0 4-12 8-12s4 12 8 12"/><circle cx="4" cy="18" r="1.6"/><circle cx="20" cy="18" r="1.6"/>',
   wave:'<path d="M3 12c1.5-4 3-4 4.5 0s3 4 4.5 0 3-4 4.5 0 3 4 4.5 0"/>',
   chev:'<path d="m9 5 7 7-7 7"/>',
+  doc:'<path d="M7 3h7l5 5v12a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v5h5M9 13h6M9 17h6"/>',
   tool:'<path d="M14.7 6.3a4 4 0 0 0-5.4 5.2L3.5 17.3a1.8 1.8 0 0 0 2.6 2.6l5.8-5.8a4 4 0 0 0 5.2-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/>',
   cert:'<rect x="4" y="3" width="16" height="13" rx="2"/><path d="M8 7h8M8 10.5h5"/><circle cx="15.5" cy="16.5" r="2.5"/><path d="m14 18.5-.8 3 2.3-1.2 2.3 1.2-.8-3"/>'
 };
 const ic = (n, extra='') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${ICONS[n]||''}</svg>`;
 
 function defaults(){
-  return {version:1, settings:{kmRate:0, hourRate:0, configured:false}, catalog:[], projects:[], sep:[], meta:{lastBackup:null}};
+  return {version:1, settings:{kmRate:0, hourRate:0, configured:false}, catalog:[], projects:[], sep:[], quotes:[],
+    company:{name:'', person:'', nip:'', address:'', phone:'', email:'', bank:'', notes:''}, meta:{lastBackup:null}};
 }
 function normalize(d){
   const b = defaults();
@@ -332,6 +334,12 @@ function normalize(d){
     meta:{...b.meta, ...(d.meta||{})},
     catalog:Array.isArray(d.catalog) ? d.catalog.filter(c=>c && c.name) : [],
     sep:Array.isArray(d.sep) ? d.sep.filter(x=>x && x.title) : [],
+    company:{...b.company, ...(d.company||{})},
+    quotes:Array.isArray(d.quotes) ? d.quotes.filter(x=>x && x.id).map(x=>({
+      number:'', date:todayISO(), subject:'', notes:'', projectId:null, ...x,
+      client:{name:'', address:'', phone:'', ...(x.client||{})},
+      items:Array.isArray(x.items) ? x.items : []
+    })) : [],
     projects:Array.isArray(d.projects) ? d.projects.filter(p=>p && p.id).map(p=>({
       status:'wycena', notes:'', address:'', phone:'', distance:null, ...p,
       items:Array.isArray(p.items) ? p.items : []
@@ -509,7 +517,7 @@ function syncQuick(form, name){
 
 /* ================= Nawigacja ================= */
 const view = $('#view'), topbar = $('#topbar'), fab = $('#fab');
-let prevRoute = null;
+let prevRoute = null, lastTab = 'projects';
 const ui = {q:'', status:'all', catQ:''};
 
 function parseRoute(){
@@ -517,11 +525,12 @@ function parseRoute(){
   const [name, id] = h.split('/');
   return {name: name || 'projects', id: id ? decodeURIComponent(id) : null};
 }
-function setTop({title, back=false, menu=null}){
+function setTop({title, back=false, menu=null, gear=false}){
   topbar.className = 'topbar' + (back ? ' has-back' : '');
   topbar.innerHTML = `<div class="topbar-in">
     ${back ? `<button class="icon-btn" id="tb-back" aria-label="Wstecz">${ic('back')}</button>` : ''}
     <h1>${esc(title)}</h1>
+    ${gear ? `<a class="icon-btn" id="tb-settings" href="#/settings" aria-label="Ustawienia">${ic('gear')}</a>` : ''}
     ${menu ? `<button class="icon-btn" id="tb-menu" aria-label="Więcej opcji">${ic('more')}</button>` : ''}</div>`;
   if(back) $('#tb-back').onclick = back;
   if(menu) $('#tb-menu').onclick = menu;
@@ -532,9 +541,14 @@ function setFab(label, fnc){
 }
 function render(){
   const r = parseRoute();
-  $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === (r.name==='project' ? 'projects' : r.name)));
+  if(r.name==='calc' && r.id==='quotes'){ location.replace('#/quotes'); return; }   // stary adres
+  const TAB_OF = {project:'projects', quote:'quotes', projects:'projects', quotes:'quotes', catalog:'catalog', calc:'calc'};
+  if(TAB_OF[r.name]) lastTab = TAB_OF[r.name];
+  $$('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === lastTab));
   switch(r.name){
     case 'project': viewProject(r.id); break;
+    case 'quote': viewQuote(r.id); break;
+    case 'quotes': viewQuotes(); break;
     case 'catalog': viewCatalog(); break;
     case 'settings': viewSettings(); break;
     case 'calc':
@@ -560,7 +574,7 @@ $$('[data-ic]').forEach(el => el.innerHTML = ic(el.dataset.ic));
 
 /* ================= Widok: lista projektów ================= */
 function viewProjects(){
-  setTop({title:'Projekty'});
+  setTop({title:'Projekty', gear:true});
   setFab('Nowy projekt', () => projectForm());
   view.onclick = null;
   const counts = {all: db.projects.length};
@@ -721,6 +735,7 @@ function section(p, type, t){
 function projectMenu(p){
   openSheet(p.name, `<div class="menu-list">
     <button type="button" data-a="edit">${ic('edit')}<span>Edytuj dane projektu<small>Nazwa, adres, telefon, odległość</small></span></button>
+    <button type="button" data-a="quote">${ic('doc')}<span>Utwórz wycenę<small>PDF lub Word na podstawie tego projektu</small></span></button>
     <button type="button" data-a="recalc">${ic('refresh')}<span>Przelicz wg aktualnych stawek<small>${fm(db.settings.kmRate)}/km · ${fm(db.settings.hourRate)}/h</small></span></button>
     <button type="button" data-a="delete" class="danger">${ic('trash')}<span>Usuń projekt</span></button>
   </div>`, {
@@ -728,6 +743,7 @@ function projectMenu(p){
       form.onclick = async e => {
         const b = e.target.closest('[data-a]'); if(!b) return;
         if(b.dataset.a==='edit'){ projectForm(p); return; }
+        if(b.dataset.a==='quote'){ quoteFromProjectSheet(p); return; }
         if(b.dataset.a==='recalc'){
           await closeSheet();
           const n = p.items.filter(i=>i.type!=='part').length;
@@ -902,7 +918,7 @@ function partSheet(p, it){
 
 /* ================= Widok: katalog ================= */
 function viewCatalog(){
-  setTop({title:'Katalog części', menu: () => catalogMenu()});
+  setTop({title:'Katalog części', menu: () => catalogMenu(), gear:true});
   setFab('Nowa część', () => catalogForm());
   view.onclick = null;
   view.innerHTML = `<div class="search">${ic('search')}<input id="cq" type="search" placeholder="Szukaj części" value="${esc(ui.catQ)}" enterkeyhint="search"></div><div id="clist"></div>`;
@@ -1176,17 +1192,524 @@ const kv = (k, v) => `<div class="kv"><span>${k}</span><b>${v}</b></div>`;
 
 /* ----- Lista kalkulatorów ----- */
 function viewCalcList(){
-  setTop({title:'Narzędzia'});
+  setTop({title:'Narzędzia', gear:true});
   setFab(null);
   view.onclick = null;
   const ns = db.sep.length;
   view.innerHTML = `<div class="sec-title" style="margin-top:6px">Kalkulatory</div><div class="choose">
-    <a href="#/calc/power"><span class="ci">${ic('wave')}</span><span class="grow"><b>Moc i prąd 1 oraz 3 fazy</b><small>P = √3 · U · I · cos φ  /  P = U · I · cos φ</small></span>${ic('chev')}</a>
+    <a href="#/calc/power"><span class="ci">${ic('wave')}</span><span class="grow"><b>Moc i prąd 1 oraz 3 fazy</b><small>230 V i 400 V · moc ↔ prąd</small></span>${ic('chev')}</a>
     <a href="#/calc/drop"><span class="ci">${ic('cable')}</span><span class="grow"><b>Spadek napięcia i prąd w przewodzie</b><small>Spadek napięcia, obciążalność, dobór przekroju</small></span>${ic('chev')}</a>
   </div>
   <div class="sec-title">Dokumenty</div><div class="choose">
     <a href="#/calc/sep"><span class="ci">${ic('cert')}</span><span class="grow"><b>Uprawnienia SEP</b><small>${ns ? `${ns} ${plural(ns,'uprawnienie','uprawnienia','uprawnień')}` : 'Przechowuj swoje świadectwa kwalifikacyjne'}</small></span>${ic('chev')}</a>
   </div>`;
+}
+
+/* ================= Wyceny ================= */
+const UNITS = ['szt.', 'm', 'kpl.', 'h', 'km', 'usł.'];
+const quoteTotal = q => r2(q.items.reduce((s, it) => s + r2((Number(it.qty)||0) * (Number(it.price)||0)), 0));
+const getQuote = id => db.quotes.find(q => q.id===id);
+const docMoney = n => fm(n).replace(/[  ]/g, ' ');
+const docNum = n => fn(n).replace(/[  ]/g, ' ');
+
+function nextQuoteNumber(dateISO){
+  const y = (dateISO || todayISO()).slice(0,4);
+  let max = 0;
+  db.quotes.forEach(q => { const m = /^W\/(\d+)\/(\d{4})$/.exec(q.number||''); if(m && m[2]===y) max = Math.max(max, Number(m[1])); });
+  return `W/${max+1}/${y}`;
+}
+function quoteItemsFromProject(p, mode){
+  const out = [];
+  const tr = itemsOf(p,'travel'), lb = itemsOf(p,'labor'), pt = itemsOf(p,'part');
+  const same = (arr, k) => arr.length && arr.every(x => Number(x[k])===Number(arr[0][k]));
+  if(mode==='detail'){
+    tr.forEach(t => out.push({name:`Dojazd${t.date ? ' ' + fmtDate(t.date) : ''} (${fn(t.km)} km × 2)`, qty:r2(t.km*2), unit:'km', price:Number(t.rate)||0}));
+    lb.forEach(l => out.push({name:`Robocizna ${fmtDate(l.date)}${l.desc ? ' – ' + l.desc : ''}`, qty:Number(l.hours)||0, unit:'h', price:Number(l.rate)||0}));
+    pt.forEach(x => out.push({name:x.name, qty:Number(x.qty)||0, unit:'szt.', price:Number(x.price)||0}));
+  } else {
+    if(tr.length){
+      const tot = r2(tr.reduce((s,t)=>s+itemTotal(t),0));
+      const name = `Dojazd (${tr.length} ${plural(tr.length,'przyjazd','przyjazdy','przyjazdów')})`;
+      out.push(same(tr,'rate') ? {name, qty:r2(tr.reduce((s,t)=>s+t.km*2,0)), unit:'km', price:Number(tr[0].rate)||0} : {name, qty:1, unit:'kpl.', price:tot});
+    }
+    if(lb.length){
+      const tot = r2(lb.reduce((s,l)=>s+itemTotal(l),0));
+      out.push(same(lb,'rate') ? {name:'Robocizna', qty:r2(lb.reduce((s,l)=>s+Number(l.hours),0)), unit:'h', price:Number(lb[0].rate)||0} : {name:'Robocizna', qty:1, unit:'kpl.', price:tot});
+    }
+    if(pt.length){
+      out.push({name:'Materiały', qty:1, unit:'kpl.', price:r2(pt.reduce((s,x)=>s+itemTotal(x),0))});
+    }
+  }
+  return out.map(it => ({id: uid(), ...it}));
+}
+function createQuote({project=null, mode='detail'} = {}){
+  const date = todayISO(), now = new Date().toISOString();
+  const q = {
+    id: uid(), number: nextQuoteNumber(date), date,
+    client: project ? {name: project.name||'', address: project.address||'', phone: project.phone||''} : {name:'', address:'', phone:''},
+    subject: '', projectId: project ? project.id : null,
+    items: project ? quoteItemsFromProject(project, mode) : [],
+    notes: db.company.notes || '', createdAt: now, updatedAt: now
+  };
+  db.quotes.push(q); save();
+  return q;
+}
+function modeSegHtml(){
+  return `<div class="field"><span class="flabel">Pozycje z projektu</span>
+    <div class="segp" data-seg="mode"><button type="button" data-v="detail" class="on">Szczegółowo<small>każda pozycja osobno</small></button><button type="button" data-v="group">Zgrupowane<small>Dojazd / Robocizna / Materiały</small></button></div>
+    <input type="hidden" name="mode" value="detail"></div>`;
+}
+function bindModeSeg(form){
+  const seg = $('[data-seg="mode"]', form);
+  seg.onclick = e => { const b = e.target.closest('[data-v]'); if(!b) return; $$('[data-v]', seg).forEach(x => x.classList.toggle('on', x===b)); form.elements.mode.value = b.dataset.v; };
+}
+
+/* ----- Lista wycen ----- */
+function viewQuotes(){
+  setTop({title:'Wyceny', gear:true});
+  setFab('Nowa wycena', () => newQuoteSheet());
+  view.onclick = null;
+  if(!db.quotes.length){
+    view.innerHTML = `<div class="empty">${ic('doc')}<p>Nie masz jeszcze wycen.<br>Utwórz pierwszą przyciskiem „Nowa wycena” – pustą albo na podstawie projektu.</p></div>`;
+    return;
+  }
+  const list = [...db.quotes].sort((a,b) => (b.date||'').localeCompare(a.date||'') || (b.createdAt||'').localeCompare(a.createdAt||''));
+  view.innerHTML = list.map(q => `<a class="card pcard" href="#/quote/${encodeURIComponent(q.id)}">
+      <div class="pc-top"><div class="pc-name">${esc(q.number)}</div><div class="pc-sum">${fm(quoteTotal(q))}</div></div>
+      <div class="pc-sub">${esc(q.client.name || 'Bez zamawiającego')}${q.subject ? ' · ' + esc(q.subject) : ''}</div>
+      <div class="pc-bot"><span class="muted">${fmtDate(q.date)}</span><span class="muted">${q.items.length} poz.</span></div></a>`).join('');
+}
+function newQuoteSheet(){
+  openSheet('Nowa wycena', `<div class="choose">
+    <button type="button" data-t="project"><span class="ci">${ic('folder')}</span><span><b>Z projektu</b><small>Pozycje i dane klienta z wybranego projektu</small></span></button>
+    <button type="button" data-t="empty"><span class="ci">${ic('edit')}</span><span><b>Pusta wycena</b><small>Pozycje dodasz ręcznie</small></span></button>
+  </div>`, {
+    onMount: form => {
+      form.onclick = e => {
+        const b = e.target.closest('[data-t]'); if(!b) return;
+        if(b.dataset.t==='empty'){ const q = createQuote(); closeSheet().then(() => { location.hash = '/quote/' + encodeURIComponent(q.id); }); }
+        else pickProjectSheet();
+      };
+    }
+  });
+}
+function pickProjectSheet(){
+  const list = [...db.projects].sort((a,b) => (b.updatedAt||'').localeCompare(a.updatedAt||''));
+  if(!list.length){ toast('Nie masz jeszcze projektów'); return; }
+  openSheet('Wycena z projektu', `
+    <div class="field"><span class="flabel">Projekt</span>
+      <div class="sugg" style="max-height:260px;margin-top:0" data-plist>${list.map((p,i) => `<button type="button" data-pid="${p.id}" class="${i===0?'on':''}"><span class="sg-name">${esc(p.name)}</span><span class="sg-price">${fm(projectTotals(p).all)}</span></button>`).join('')}</div>
+      <input type="hidden" name="pid" value="${list[0].id}"></div>
+    ${modeSegHtml()}
+  `, {
+    saveLabel: 'Utwórz wycenę',
+    onMount: form => {
+      bindModeSeg(form);
+      $('[data-plist]', form).onclick = e => {
+        const b = e.target.closest('[data-pid]'); if(!b) return;
+        $$('[data-pid]', form).forEach(x => x.classList.toggle('on', x===b)); form.elements.pid.value = b.dataset.pid;
+      };
+    },
+    onSave: form => {
+      const p = getProject(form.elements.pid.value); if(!p) return false;
+      const q = createQuote({project:p, mode:form.elements.mode.value});
+      toast('Utworzono wycenę ' + q.number);
+      return () => { location.hash = '/quote/' + encodeURIComponent(q.id); };
+    }
+  });
+}
+function quoteFromProjectSheet(p){
+  openSheet('Wycena z projektu', `<p style="margin:4px 0 14px"><b>${esc(p.name)}</b><br><span class="muted">${p.items.length} poz. · ${fm(projectTotals(p).all)}</span></p>${modeSegHtml()}`, {
+    saveLabel: 'Utwórz wycenę',
+    onMount: bindModeSeg,
+    onSave: form => {
+      const q = createQuote({project:p, mode:form.elements.mode.value});
+      toast('Utworzono wycenę ' + q.number);
+      return () => { location.hash = '/quote/' + encodeURIComponent(q.id); };
+    }
+  });
+}
+
+/* ----- Edytor wyceny ----- */
+let quoteSaveT;
+function viewQuote(id){
+  const q = getQuote(id);
+  if(!q){ location.replace('#/quotes'); return; }
+  const came = prevRoute && (prevRoute.name==='quotes' || prevRoute.name==='project');
+  if(came) history.replaceState({fromParent:true}, '');
+  if(!prevRoute || prevRoute.name!=='quote' || prevRoute.id!==id) window.scrollTo(0,0);
+  setTop({title: q.number, back: () => { if(came || history.state?.fromParent) history.back(); else location.replace('#/quotes'); }, menu: () => quoteMenu(q)});
+  setFab(null);
+  const c = db.company;
+  const noCompany = !(c.name || c.person);
+  const total = quoteTotal(q);
+  view.innerHTML = `
+    ${noCompany ? `<a class="banner" href="#/settings">${ic('warn','style="width:22px;height:22px;flex:none;color:var(--warn)"')}<span><b>Uzupełnij dane wykonawcy</b> w Ustawieniach – pojawią się w nagłówku wyceny.</span></a>` : ''}
+    <section class="card card-pad" id="q-head">
+      <div class="two">
+        <div class="field"><label for="q-number">Numer</label><input class="inp" id="q-number" data-k="number" value="${esc(q.number)}"></div>
+        <div class="field"><label for="q-date">Data</label><input class="inp" type="date" id="q-date" data-k="date" value="${esc(q.date)}"></div>
+      </div>
+      <div class="field"><label for="q-cname">Zamawiający</label><input class="inp" id="q-cname" data-k="client.name" value="${esc(q.client.name)}" placeholder="Imię i nazwisko / firma" autocapitalize="words"></div>
+      <div class="field"><label for="q-caddr">Adres zamawiającego</label><input class="inp" id="q-caddr" data-k="client.address" value="${esc(q.client.address)}" placeholder="opcjonalnie"></div>
+      <div class="field"><label for="q-cphone">Telefon zamawiającego</label><input class="inp" id="q-cphone" type="tel" inputmode="tel" data-k="client.phone" value="${esc(q.client.phone)}" placeholder="opcjonalnie"></div>
+      <div class="field" style="margin-bottom:0"><label for="q-subject">Dotyczy</label><input class="inp" id="q-subject" data-k="subject" value="${esc(q.subject)}" placeholder="np. wymiana rozdzielnicy (opcjonalnie)" autocapitalize="sentences"></div>
+    </section>
+    <section class="card summary">
+      <div class="sec-head"><h3>Pozycje <span class="muted">(${q.items.length})</span></h3>
+        <button class="btn-add" data-qadd>${ic('plus')}Dodaj</button></div>
+      ${q.items.length ? q.items.map((it, i) => `<button class="row" data-qit="${it.id}"><div class="row-main"><div class="row-title">${i+1}. ${esc(it.name)}</div><div class="row-sub">${fn(it.qty)} ${esc(it.unit)} × ${fm(it.price)}</div></div><div class="row-amt">${fm(r2(it.qty*it.price))}</div></button>`).join('') : '<div class="empty-sm">Brak pozycji – dodaj je przyciskiem „Dodaj”.</div>'}
+      <div class="sum-total" style="margin-top:0"><span>Razem</span><b>${fm(total)}</b></div>
+    </section>
+    <section class="card notes"><div class="sec-head"><h3>Uwagi</h3></div>
+      <textarea id="q-notes" data-k="notes" placeholder="np. termin realizacji, gwarancja, warunki płatności…">${esc(q.notes)}</textarea></section>
+    <div class="sec-title">Generuj plik</div>
+    <div class="two" style="margin-bottom:12px">
+      <button class="btn primary" data-gen="pdf">${ic('doc')}PDF</button>
+      <button class="btn ghost" data-gen="docx">${ic('doc')}Word (DOCX)</button>
+    </div>`;
+  const setK = (k, v) => { const [a,b] = k.split('.'); if(b) q[a][b] = v; else q[a] = v; };
+  $$('[data-k]', view).forEach(el => {
+    el.addEventListener('input', () => {
+      setK(el.dataset.k, el.type==='date' ? (el.value || todayISO()) : el.value);
+      clearTimeout(quoteSaveT);
+      quoteSaveT = setTimeout(() => { touch(q); save(); if(el.dataset.k==='number') $('#topbar h1').textContent = q.number; }, 350);
+    });
+    el.addEventListener('blur', () => { clearTimeout(quoteSaveT); touch(q); save(); $('#topbar h1').textContent = q.number; });
+  });
+  view.onclick = e => {
+    if(e.target.closest('[data-qadd]')){ quoteItemSheet(q); return; }
+    const r = e.target.closest('[data-qit]');
+    if(r){ const it = q.items.find(x => x.id===r.dataset.qit); if(it) quoteItemSheet(q, it); return; }
+    const g = e.target.closest('[data-gen]');
+    if(g) generateQuoteFile(q, g.dataset.gen);
+  };
+  loadPdfLibs().catch(()=>{});   // wstępne ładowanie w tle
+}
+function quoteMenu(q){
+  const p = q.projectId ? getProject(q.projectId) : null;
+  openSheet(q.number, `<div class="menu-list">
+    ${p ? `<button type="button" data-a="refresh">${ic('refresh')}<span>Pobierz ponownie pozycje z projektu<small>${esc(p.name)} – zastąpi obecne pozycje</small></span></button>` : ''}
+    <button type="button" data-a="dup">${ic('plus')}<span>Duplikuj wycenę<small>Kopia z nowym numerem i dzisiejszą datą</small></span></button>
+    <button type="button" data-a="delete" class="danger">${ic('trash')}<span>Usuń wycenę</span></button>
+  </div>`, {
+    onMount: form => {
+      form.onclick = async e => {
+        const b = e.target.closest('[data-a]'); if(!b) return;
+        const a = b.dataset.a;
+        if(a==='refresh'){
+          openSheet('Pozycje z projektu', `<p style="margin:4px 0 14px">Obecne pozycje (${q.items.length}) zostaną zastąpione pozycjami z projektu <b>${esc(p.name)}</b>.</p>${modeSegHtml()}`, {
+            saveLabel: 'Zastąp pozycje', onMount: bindModeSeg,
+            onSave: f => { q.items = quoteItemsFromProject(p, f.elements.mode.value); touch(q); save(); toast('Pobrano pozycje z projektu'); }
+          });
+          return;
+        }
+        if(a==='dup'){
+          const date = todayISO(), now = new Date().toISOString();
+          const c = {...JSON.parse(JSON.stringify(q)), id: uid(), number: nextQuoteNumber(date), date, createdAt: now, updatedAt: now};
+          c.items = c.items.map(it => ({...it, id: uid()}));
+          db.quotes.push(c); save();
+          await closeSheet(); location.hash = '/quote/' + encodeURIComponent(c.id); toast('Utworzono kopię ' + c.number);
+          return;
+        }
+        if(a==='delete'){
+          await closeSheet();
+          if(await confirmDlg(`Usunąć wycenę ${q.number}?`)){
+            db.quotes = db.quotes.filter(x => x.id!==q.id); save();
+            location.replace('#/quotes'); toast('Wycena usunięta');
+          }
+        }
+      };
+    }
+  });
+}
+function quoteItemSheet(q, it){
+  const isNew = !it;
+  const d = it || {name:'', qty:1, unit:'szt.', price:null};
+  openSheet(isNew ? 'Nowa pozycja' : 'Pozycja wyceny', `
+    <div class="field"><label for="f-name">Nazwa</label>
+      <input class="inp" id="f-name" name="name" value="${esc(d.name)}" placeholder="Wpisz lub wybierz z katalogu" autocapitalize="sentences" enterkeyhint="done">
+      <div class="sugg" id="sugg" hidden></div></div>
+    ${fieldStepper('qty', 'Ilość', d.qty, 1)}
+    <div class="two">
+      <div class="field"><label for="f-unit">Jednostka</label><select class="inp" id="f-unit" name="unit">${UNITS.map(u => `<option ${u===d.unit?'selected':''}>${u}</option>`).join('')}</select></div>
+      ${fieldNum('price', 'Cena jedn.', d.price, 'zł')}
+    </div>
+    ${totalBox('qt')}
+  `, {
+    saveLabel: isNew ? 'Dodaj pozycję' : 'Zapisz',
+    onDelete: isNew ? null : async () => {
+      if(!await confirmDlg('Usunąć tę pozycję z wyceny?')) return false;
+      q.items = q.items.filter(x => x.id!==it.id); touch(q); save(); toast('Usunięto');
+    },
+    onMount: form => {
+      const nameEl = form.elements.name, sugg = $('#sugg', form);
+      const draw = () => {
+        const qq = norm(nameEl.value.trim());
+        const list = db.catalog.filter(c => qq && norm(c.name).includes(qq)).sort((a,b)=>a.name.localeCompare(b.name,'pl')).slice(0,30);
+        sugg.hidden = !list.length;
+        sugg.innerHTML = list.map(c => `<button type="button" data-cid="${c.id}"><span class="sg-name">${esc(c.name)}</span><span class="sg-price">${fm(c.price)}</span></button>`).join('');
+      };
+      const upd = () => {
+        const qty = parseNum(form.elements.qty.value)||0, price = parseNum(form.elements.price.value)||0;
+        $('#qt', form).textContent = fm(qty*price);
+        $('#qt-f', form).textContent = `${fn(qty)} ${form.elements.unit.value} × ${fm(price)}`;
+      };
+      nameEl.addEventListener('input', draw);
+      sugg.onclick = e => {
+        const b = e.target.closest('[data-cid]'); if(!b) return;
+        const c = db.catalog.find(x => x.id===b.dataset.cid); if(!c) return;
+        nameEl.value = c.name; form.elements.price.value = inVal(c.price); form.elements.unit.value = 'szt.';
+        sugg.hidden = true; upd();
+      };
+      form.elements.unit.onchange = upd;
+      bindSteppers(form, upd); upd();
+      if(isNew) setTimeout(() => nameEl.focus(), 250);
+    },
+    onSave: form => {
+      const name = form.elements.name.value.trim();
+      const qty = parseNum(form.elements.qty.value), price = parseNum(form.elements.price.value);
+      if(!name) return markErr(form, 'name', 'Podaj nazwę');
+      if(qty===null || qty<=0) return markErr(form, 'qty', 'Podaj ilość');
+      if(price===null || price<0) return markErr(form, 'price', 'Podaj cenę');
+      const data = {name, qty, unit: form.elements.unit.value, price};
+      if(isNew) q.items.push({id: uid(), ...data}); else Object.assign(it, data);
+      touch(q); save(); toast(isNew ? 'Dodano pozycję' : 'Zapisano');
+    }
+  });
+}
+
+/* ----- Dane do dokumentu ----- */
+function quoteDocData(q){
+  const c = db.company;
+  const seller = [];
+  if(c.name) seller.push(c.name);
+  if(c.person) seller.push(c.person);
+  if(c.address) c.address.split(/\r?\n/).forEach(l => l.trim() && seller.push(l.trim()));
+  if(c.nip) seller.push('NIP: ' + c.nip);
+  if(c.phone) seller.push('tel. ' + c.phone);
+  if(c.email) seller.push('e-mail: ' + c.email);
+  if(c.bank) seller.push('Nr konta: ' + c.bank);
+  const buyer = [];
+  if(q.client.name) buyer.push(q.client.name);
+  if(q.client.address) buyer.push(q.client.address);
+  if(q.client.phone) buyer.push('tel. ' + q.client.phone);
+  return {
+    title: `Wycena nr ${q.number}`, date: fmtDate(q.date), seller, buyer, subject: q.subject.trim(),
+    rows: q.items.map((it, i) => [String(i+1), it.name, docNum(it.qty), it.unit, docMoney(it.price), docMoney(r2(it.qty*it.price))]),
+    total: docMoney(quoteTotal(q)), notes: (q.notes||'').trim()
+  };
+}
+const quoteFileBase = q => {
+  const base = 'Wycena_' + q.number.replace(/[\\/:*?"<>|\s]+/g, '-');
+  const subj = String(q.subject || '').replace(/[\\/:*?"<>|\u0000-\u001F]+/g, ' ').trim().replace(/\s+/g, '_').replace(/_?[–—-]_?/g, '-').replace(/^[._-]+|[._-]+$/g, '');
+  let cut = subj.length > 60 ? subj.slice(0, 60).replace(/_[^_]*$/, '') : subj;
+  cut = cut.replace(/[._-]+$/, '');
+  return cut ? cut + '_' + base : base;
+};
+
+/* ----- PDF (jsPDF) ----- */
+let pdfLibsP = null;
+function loadScript(src){
+  return new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Nie udało się wczytać ' + src)); document.head.appendChild(s); });
+}
+function loadPdfLibs(){
+  if(!pdfLibsP){
+    pdfLibsP = loadScript('libs/jspdf.umd.min.js')
+      .then(() => loadScript('libs/jspdf.plugin.autotable.min.js'))
+      .then(() => loadScript('libs/fonts.js'))
+      .catch(err => { pdfLibsP = null; throw err; });
+  }
+  return pdfLibsP;
+}
+async function buildQuotePdf(q){
+  await loadPdfLibs();
+  const D = quoteDocData(q);
+  const {jsPDF} = window.jspdf;
+  const doc = new jsPDF({unit:'mm', format:'a4'});
+  doc.addFileToVFS('ElfSans-Regular.ttf', window.ELF_FONTS.regular); doc.addFont('ElfSans-Regular.ttf', 'ElfSans', 'normal');
+  doc.addFileToVFS('ElfSans-Bold.ttf', window.ELF_FONTS.bold); doc.addFont('ElfSans-Bold.ttf', 'ElfSans', 'bold');
+  doc.setProperties({title: D.title, creator: 'el_Fuszka'});
+  const M = 15, PW = 210, PH = 297, CW = PW - 2*M;
+  let y = 20;
+  doc.setTextColor(17, 24, 39);
+  doc.setFont('ElfSans', 'bold'); doc.setFontSize(18); doc.text(D.title, M, y);
+  doc.setFont('ElfSans', 'normal'); doc.setFontSize(10); doc.text('Data: ' + D.date, PW - M, y, {align:'right'});
+  y += 4; doc.setDrawColor(29, 78, 216); doc.setLineWidth(0.6); doc.line(M, y, PW - M, y);
+  y += 8;
+  const colW = (CW - 10) / 2;
+  const block = (x, label, lines) => {
+    let yy = y;
+    doc.setFont('ElfSans', 'bold'); doc.setFontSize(8.5); doc.setTextColor(107, 114, 128); doc.text(label.toUpperCase(), x, yy);
+    yy += 5; doc.setTextColor(17, 24, 39); doc.setFontSize(10);
+    if(!lines.length){ doc.setFont('ElfSans', 'normal'); doc.text('—', x, yy); return yy + 4.6; }
+    lines.forEach((ln, i) => {
+      doc.setFont('ElfSans', i===0 ? 'bold' : 'normal');
+      const parts = doc.splitTextToSize(ln, colW);
+      doc.text(parts, x, yy); yy += parts.length * 4.6;
+    });
+    return yy;
+  };
+  y = Math.max(block(M, 'Wykonawca', D.seller), block(M + colW + 10, 'Zamawiający', D.buyer)) + 3;
+  if(D.subject){
+    doc.setFontSize(10); doc.setFont('ElfSans', 'bold'); doc.text('Dotyczy:', M, y);
+    doc.setFont('ElfSans', 'normal');
+    const parts = doc.splitTextToSize(D.subject, CW - 18); doc.text(parts, M + 17, y); y += parts.length * 4.6;
+  }
+  y += 3;
+  const opts = {
+    startY: y, margin: {left: M, right: M, bottom: 18},
+    head: [['Lp.', 'Nazwa', 'Ilość', 'j.m.', 'Cena jedn.', 'Wartość']],
+    body: D.rows.length ? D.rows : [['', 'Brak pozycji', '', '', '', '']],
+    foot: [[{content:'Razem', colSpan:5, styles:{halign:'right'}}, {content:D.total, styles:{halign:'right'}}]],
+    showFoot: 'lastPage',
+    styles: {font:'ElfSans', fontSize:9.5, cellPadding:2, textColor:[17,24,39], lineColor:[200,205,215], lineWidth:0.2, valign:'middle'},
+    headStyles: {font:'ElfSans', fontStyle:'bold', fillColor:[29,78,216], textColor:255, halign:'center'},
+    footStyles: {font:'ElfSans', fontStyle:'bold', fillColor:[230,237,255], textColor:[17,24,39], fontSize:11},
+    columnStyles: {0:{halign:'center', cellWidth:10}, 1:{cellWidth:'auto'}, 2:{halign:'right', cellWidth:17}, 3:{halign:'center', cellWidth:13}, 4:{halign:'right', cellWidth:27}, 5:{halign:'right', cellWidth:29}}
+  };
+  if(typeof doc.autoTable === 'function') doc.autoTable(opts);
+  else window.jspdf_autotable.autoTable(doc, opts);
+  y = doc.lastAutoTable.finalY + 9;
+  if(D.notes){
+    const parts = doc.splitTextToSize(D.notes, CW);
+    if(y + 10 > PH - 18){ doc.addPage(); y = 20; }
+    doc.setFont('ElfSans', 'bold'); doc.setFontSize(10.5); doc.text('Uwagi', M, y); y += 5.5;
+    doc.setFont('ElfSans', 'normal'); doc.setFontSize(10);
+    parts.forEach(line => { if(y > PH - 18){ doc.addPage(); y = 20; } doc.text(line, M, y); y += 4.8; });
+  }
+  const n = doc.getNumberOfPages();
+  for(let i = 1; i <= n; i++){
+    doc.setPage(i); doc.setFont('ElfSans', 'normal'); doc.setFontSize(8); doc.setTextColor(140);
+    doc.text(`${D.title}${n > 1 ? `  ·  strona ${i} z ${n}` : ''}`, PW - M, PH - 10, {align:'right'});
+  }
+  return doc.output('blob');
+}
+
+/* ----- DOCX (własny zapis Office Open XML + ZIP) ----- */
+const CRC_TABLE = (() => { const t = new Uint32Array(256); for(let n=0; n<256; n++){ let c = n; for(let k=0; k<8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(u8){ let c = 0xFFFFFFFF; for(let i=0; i<u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function zipStore(files){
+  const enc = new TextEncoder(), parts = [], central = [];
+  const d = new Date();
+  const dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+  const dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+  let offset = 0;
+  files.forEach(f => {
+    const name = enc.encode(f.name), data = typeof f.data === 'string' ? enc.encode(f.data) : f.data, crc = crc32(data);
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true); lh.setUint16(8, 0, true);
+    lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true); lh.setUint32(14, crc, true);
+    lh.setUint32(18, data.length, true); lh.setUint32(22, data.length, true); lh.setUint16(26, name.length, true); lh.setUint16(28, 0, true);
+    parts.push(new Uint8Array(lh.buffer), name, data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true); ch.setUint16(10, 0, true);
+    ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true); ch.setUint32(16, crc, true);
+    ch.setUint32(20, data.length, true); ch.setUint32(24, data.length, true); ch.setUint16(28, name.length, true);
+    ch.setUint16(30, 0, true); ch.setUint16(32, 0, true); ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+    central.push(new Uint8Array(ch.buffer), name);
+    offset += 30 + name.length + data.length;
+  });
+  const cdSize = central.reduce((s, a) => s + a.length, 0);
+  const end = new DataView(new ArrayBuffer(22));
+  end.setUint32(0, 0x06054b50, true); end.setUint16(8, files.length, true); end.setUint16(10, files.length, true);
+  end.setUint32(12, cdSize, true); end.setUint32(16, offset, true);
+  return new Blob([...parts, ...central, new Uint8Array(end.buffer)], {type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'});
+}
+function buildQuoteDocx(q){
+  const D = quoteDocData(q);
+  const x = s => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, '');
+  const run = (text, o={}) => {
+    const rpr = `${o.b ? '<w:b/><w:bCs/>' : ''}${o.color ? `<w:color w:val="${o.color}"/>` : ''}${o.sz ? `<w:sz w:val="${o.sz}"/><w:szCs w:val="${o.sz}"/>` : ''}`;
+    const body = String(text ?? '').split(/\r?\n/).map(l => `<w:t xml:space="preserve">${x(l)}</w:t>`).join('<w:br/>');
+    return `<w:r>${rpr ? `<w:rPr>${rpr}</w:rPr>` : ''}${body}</w:r>`;
+  };
+  const para = (runs, o={}) => `<w:p><w:pPr>${o.jc ? `<w:jc w:val="${o.jc}"/>` : ''}<w:spacing w:before="${o.before||0}" w:after="${o.after||0}"/>${o.border ? '<w:pBdr><w:bottom w:val="single" w:sz="12" w:space="4" w:color="1D4ED8"/></w:pBdr>' : ''}</w:pPr>${runs}</w:p>`;
+  const cell = (w, content, o={}) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/>${o.span ? `<w:gridSpan w:val="${o.span}"/>` : ''}${o.fill ? `<w:shd w:val="clear" w:color="auto" w:fill="${o.fill}"/>` : ''}<w:vAlign w:val="${o.top ? 'top' : 'center'}"/></w:tcPr>${content}</w:tc>`;
+  const cellP = (text, o={}) => para(run(text, o), {jc: o.jc});
+  // Nagłówek
+  let body = para(run(D.title, {b:true, sz:36}), {after:40});
+  body += para(run('Data: ' + D.date, {sz:20}), {border:true, after:240});
+  // Wykonawca / Zamawiający
+  const party = (label, lines) => para(run(label.toUpperCase(), {b:true, sz:16, color:'6B7280'}), {after:60}) +
+    (lines.length ? lines.map((l, i) => para(run(l, {b: i===0}))).join('') : para(run('—')));
+  const noB = '<w:tblBorders><w:top w:val="nil"/><w:left w:val="nil"/><w:bottom w:val="nil"/><w:right w:val="nil"/><w:insideH w:val="nil"/><w:insideV w:val="nil"/></w:tblBorders>';
+  body += `<w:tbl><w:tblPr><w:tblW w:w="10206" w:type="dxa"/>${noB}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:left w:w="0" w:type="dxa"/><w:right w:w="113" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid><w:gridCol w:w="5103"/><w:gridCol w:w="5103"/></w:tblGrid><w:tr>${cell(5103, party('Wykonawca', D.seller), {top:true})}${cell(5103, party('Zamawiający', D.buyer), {top:true})}</w:tr></w:tbl>`;
+  if(D.subject) body += para(run('Dotyczy: ', {b:true}) + run(D.subject), {before:200});
+  body += para('', {after:160});
+  // Tabela pozycji
+  const W = [567, 4706, 1020, 737, 1531, 1645];
+  const bd = '<w:tblBorders><w:top w:val="single" w:sz="4" w:color="C8CDD7"/><w:left w:val="single" w:sz="4" w:color="C8CDD7"/><w:bottom w:val="single" w:sz="4" w:color="C8CDD7"/><w:right w:val="single" w:sz="4" w:color="C8CDD7"/><w:insideH w:val="single" w:sz="4" w:color="C8CDD7"/><w:insideV w:val="single" w:sz="4" w:color="C8CDD7"/></w:tblBorders>';
+  const head = ['Lp.', 'Nazwa', 'Ilość', 'j.m.', 'Cena jedn.', 'Wartość'];
+  const aligns = ['center', 'left', 'right', 'center', 'right', 'right'];
+  let tbl = `<w:tbl><w:tblPr><w:tblW w:w="10206" w:type="dxa"/>${bd}<w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="57" w:type="dxa"/><w:left w:w="85" w:type="dxa"/><w:bottom w:w="57" w:type="dxa"/><w:right w:w="85" w:type="dxa"/></w:tblCellMar></w:tblPr><w:tblGrid>${W.map(w => `<w:gridCol w:w="${w}"/>`).join('')}</w:tblGrid>`;
+  tbl += `<w:tr><w:trPr><w:tblHeader/></w:trPr>${head.map((h, i) => cell(W[i], cellP(h, {b:true, color:'FFFFFF', jc:'center', sz:19}), {fill:'1D4ED8'})).join('')}</w:tr>`;
+  const rows = D.rows.length ? D.rows : [['', 'Brak pozycji', '', '', '', '']];
+  rows.forEach(r => { tbl += `<w:tr><w:trPr><w:cantSplit/></w:trPr>${r.map((v, i) => cell(W[i], cellP(v, {jc: aligns[i], sz:19}))).join('')}</w:tr>`; });
+  tbl += `<w:tr>${cell(W[0]+W[1]+W[2]+W[3]+W[4], cellP('Razem', {b:true, jc:'right', sz:22}), {span:5, fill:'E6EDFF'})}${cell(W[5], cellP(D.total, {b:true, jc:'right', sz:22}), {fill:'E6EDFF'})}</w:tr></w:tbl>`;
+  body += tbl;
+  if(D.notes){
+    body += para(run('Uwagi', {b:true, sz:21}), {before:320, after:80});
+    D.notes.split(/\r?\n/).forEach(l => { body += para(run(l), {after:40}); });
+  }
+  const sect = '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="850" w:bottom="1134" w:left="850" w:header="567" w:footer="567" w:gutter="0"/></w:sectPr>';
+  const document = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><w:body>${body}${sect}</w:body></w:document>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:eastAsia="Arial" w:cs="Arial"/><w:sz w:val="20"/><w:szCs w:val="20"/><w:lang w:val="pl-PL"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="0" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults><w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style><w:style w:type="table" w:default="1" w:styleId="TableNormal"><w:name w:val="Normal Table"/><w:tblPr><w:tblInd w:w="0" w:type="dxa"/><w:tblCellMar><w:top w:w="0" w:type="dxa"/><w:left w:w="108" w:type="dxa"/><w:bottom w:w="0" w:type="dxa"/><w:right w:w="108" w:type="dxa"/></w:tblCellMar></w:tblPr></w:style></w:styles>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/><Override PartName="/docProps/core.xml" ContentType="application/vnd.openxmlformats-package.core-properties+xml"/></Types>`;
+  const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/package/2006/relationships/metadata/core-properties" Target="docProps/core.xml"/></Relationships>`;
+  const docRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const iso = new Date().toISOString().replace(/\.\d+Z$/, 'Z');
+  const core = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><dc:title>${x(D.title)}</dc:title><dc:creator>el_Fuszka</dc:creator><dcterms:created xsi:type="dcterms:W3CDTF">${iso}</dcterms:created><dcterms:modified xsi:type="dcterms:W3CDTF">${iso}</dcterms:modified></cp:coreProperties>`;
+  return zipStore([
+    {name:'[Content_Types].xml', data:contentTypes},
+    {name:'_rels/.rels', data:rels},
+    {name:'word/document.xml', data:document},
+    {name:'word/styles.xml', data:styles},
+    {name:'word/_rels/document.xml.rels', data:docRels},
+    {name:'docProps/core.xml', data:core}
+  ]);
+}
+
+/* ----- Generowanie i udostępnianie ----- */
+async function generateQuoteFile(q, kind){
+  if(!q.items.length && !await confirmDlg('Wycena nie ma żadnych pozycji. Wygenerować mimo to?', 'Generuj', false)) return;
+  clearTimeout(quoteSaveT); touch(q); save();
+  let blob;
+  const name = quoteFileBase(q) + (kind==='pdf' ? '.pdf' : '.docx');
+  try{
+    toast('Generuję plik…');
+    blob = kind==='pdf' ? await buildQuotePdf(q) : buildQuoteDocx(q);
+  }catch(err){
+    console.error(err);
+    toast(kind==='pdf' ? 'Nie udało się utworzyć PDF – sprawdź połączenie przy pierwszym użyciu' : 'Nie udało się utworzyć pliku');
+    return;
+  }
+  const type = kind==='pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+  const file = new File([blob], name, {type});
+  let share = false;
+  try{ share = !!(navigator.canShare && navigator.canShare({files:[file]})); }catch(e){}
+  openSheet('Plik gotowy', `<div class="choose">
+    <div class="recom" style="margin:0 0 4px"><span class="grow"><b>${esc(name)}</b><br><span class="small muted">${Math.max(1, Math.round(blob.size/1024))} kB · ${q.items.length} poz. · ${fm(quoteTotal(q))}</span></span></div>
+    ${share ? `<button type="button" data-a="share"><span class="ci">${ic('share')}</span><span><b>Udostępnij</b><small>WhatsApp, e-mail, Messenger, Dysk…</small></span></button>` : ''}
+    <button type="button" data-a="download"><span class="ci">${ic('download')}</span><span><b>Zapisz w telefonie</b><small>Folder „Pobrane”</small></span></button>
+  </div>`, {
+    onMount: form => {
+      form.onclick = e => {
+        const b = e.target.closest('[data-a]'); if(!b) return;
+        if(b.dataset.a==='share'){
+          navigator.share({files:[file], title: q.number}).then(() => closeSheet()).catch(err => { if(err && err.name!=='AbortError') toast('Nie udało się udostępnić'); });
+        } else {
+          downloadBlob(blob, name); toast('Zapisano w Pobranych'); closeSheet();
+        }
+      };
+    }
+  });
 }
 
 /* ----- Uprawnienia SEP ----- */
@@ -1394,7 +1917,9 @@ function viewCalcDrop(){
 
 /* ================= Widok: ustawienia ================= */
 function viewSettings(){
-  setTop({title:'Ustawienia'});
+  const cameIn = !!(prevRoute && prevRoute.name!=='settings');
+  if(cameIn) history.replaceState({fromParent:true}, '');
+  setTop({title:'Ustawienia', back: () => { if(cameIn || history.state?.fromParent) history.back(); else location.replace('#/projects'); }});
   setFab(null);
   view.onclick = null;
   const s = db.settings;
@@ -1408,6 +1933,20 @@ function viewSettings(){
       ${fieldNum('hourRate', 'Stawka godzinowa', s.configured ? s.hourRate : null, 'zł/h', {hint:'Robocizna = czas pracy × stawka godzinowa'})}
       <button class="btn primary block" type="submit">Zapisz stawki</button>
       <div class="hint">Nowe stawki dotyczą nowych pozycji. Istniejące projekty możesz przeliczyć z menu projektu (⋮).</div>
+    </form></section>
+
+    <div class="sec-title">Dane wykonawcy (do wycen)</div>
+    <section class="card"><form id="company" class="card-pad" novalidate>
+      <div class="hint" style="margin:0 0 12px">Na wycenie pojawią się tylko wypełnione pola.</div>
+      <div class="field"><label for="co-name">Nazwa firmy</label><input class="inp" id="co-name" name="name" value="${esc(db.company.name)}" placeholder="opcjonalnie"></div>
+      <div class="field"><label for="co-person">Imię i nazwisko</label><input class="inp" id="co-person" name="person" value="${esc(db.company.person)}" autocapitalize="words"></div>
+      <div class="field"><label for="co-nip">NIP</label><input class="inp" id="co-nip" name="nip" inputmode="numeric" value="${esc(db.company.nip)}" placeholder="opcjonalnie"></div>
+      <div class="field"><label for="co-address">Adres</label><textarea class="inp" id="co-address" name="address" rows="2" placeholder="ulica, kod i miejscowość">${esc(db.company.address)}</textarea></div>
+      <div class="field"><label for="co-phone">Telefon</label><input class="inp" id="co-phone" name="phone" type="tel" inputmode="tel" value="${esc(db.company.phone)}"></div>
+      <div class="field"><label for="co-email">E-mail</label><input class="inp" id="co-email" name="email" type="email" inputmode="email" value="${esc(db.company.email)}" autocapitalize="off"></div>
+      <div class="field"><label for="co-bank">Nr konta</label><input class="inp" id="co-bank" name="bank" inputmode="numeric" value="${esc(db.company.bank)}" placeholder="opcjonalnie"></div>
+      <div class="field"><label for="co-notes">Domyślne uwagi na nowych wycenach</label><textarea class="inp" id="co-notes" name="notes" rows="3" placeholder="np. Oferta ważna 14 dni. Gwarancja 24 miesiące.">${esc(db.company.notes)}</textarea></div>
+      <button class="btn primary block" type="submit">Zapisz dane wykonawcy</button>
     </form></section>
 
     <div class="sec-title">Kopia zapasowa</div>
@@ -1427,10 +1966,19 @@ function viewSettings(){
       <div class="kv"><span>Projekty</span><b>${db.projects.length}</b></div>
       <div class="kv"><span>Części w katalogu</span><b>${db.catalog.length}</b></div>
       <div class="kv"><span>Uprawnienia SEP</span><b>${db.sep.length}</b></div>
+      <div class="kv"><span>Wyceny</span><b>${db.quotes.length}</b></div>
       <div class="kv"><span>Trwały zapis danych</span><b id="persist">…</b></div>
       <div class="kv"><span>Wersja aplikacji</span><b>${APP_VERSION}</b></div>
     </section>`;
 
+  $('#company').onsubmit = e => {
+    e.preventDefault();
+    const f = e.target, c = {};
+    ['name','person','nip','address','phone','email','bank','notes'].forEach(k => c[k] = f.elements[k].value.trim());
+    db.company = {...db.company, ...c}; save();
+    document.activeElement && document.activeElement.blur();
+    toast('Zapisano dane wykonawcy');
+  };
   $('#rates').onsubmit = e => {
     e.preventDefault();
     const form = e.target;

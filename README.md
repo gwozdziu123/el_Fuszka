@@ -3,8 +3,6 @@
 Aplikacja na telefon (PWA) do prowadzenia projektów usług elektrycznych i ich wyceny.
 Działa bez internetu, dane są zapisane w telefonie.
 
-https://gwozdziu123.github.io/el_Fuszka/
-
 ## Pliki
 
 | Plik | Do czego |
@@ -13,7 +11,17 @@ https://gwozdziu123.github.io/el_Fuszka/
 | `manifest.webmanifest` | nazwa i ikona przy instalacji na telefonie |
 | `sw.js` | działanie offline |
 | `icons/` | ikony aplikacji |
+| `libs/` | biblioteki do tworzenia PDF i czcionka |
 
+## Publikacja na GitHub Pages (jednorazowo, ok. 5 minut)
+
+1. Załóż darmowe konto na https://github.com.
+2. Kliknij **New repository**, nazwij je np. `el_fuszka`, ustaw **Public**, kliknij **Create repository**.
+3. Kliknij **uploading an existing file** i przeciągnij wszystkie pliki z tego folderu
+   (`index.html`, `manifest.webmanifest`, `sw.js` oraz foldery `icons` i `libs`). Kliknij **Commit changes**.
+4. Wejdź w **Settings → Pages**. W polu **Branch** wybierz `main`, folder `/ (root)`, kliknij **Save**.
+5. Po 1–2 minutach aplikacja będzie dostępna pod adresem
+   `https://<twoja-nazwa-użytkownika>.github.io/el_fuszka/`.
 
 ## Instalacja na telefonie
 
@@ -24,9 +32,15 @@ Po instalacji aplikacja otwiera się z ikony jak zwykła aplikacja i działa off
 
 ## Pierwsze uruchomienie
 
-1. **Ustawienia** → wpisz stawkę za km i stawkę godzinową → **Zapisz stawki**.
+1. **Ustawienia** (ikona ⚙ w prawym górnym rogu) → wpisz stawkę za km i stawkę godzinową → **Zapisz stawki**.
+   Uzupełnij też **Dane wykonawcy** – pojawią się na wycenach.
 2. **Katalog** → dodaj części, których często używasz (można też dodawać je w trakcie pracy z projektu).
 3. **Projekty** → **Nowy projekt**.
+
+## Nawigacja
+
+Dolny pasek: **Projekty / Wyceny / Katalog / Narzędzia**. **Ustawienia** (stawki, dane wykonawcy,
+kopia zapasowa) otwiera ikona koła zębatego ⚙ w prawym górnym rogu.
 
 ## Zasady obliczeń
 
@@ -54,6 +68,26 @@ Przewód YDY 3x2,5;3,20
 ```
 
 Części dodane już do projektów nie zmieniają się przy imporcie.
+
+## Wyceny (PDF i Word)
+
+1. Raz uzupełnij **Ustawienia (⚙) → Dane wykonawcy** (na wycenie pojawią się tylko wypełnione pola).
+   Możesz tam też wpisać domyślne uwagi, np. „Oferta ważna 14 dni”.
+2. Zakładka **Wyceny** → **Nowa wycena**:
+   - **Z projektu** – wybierasz projekt i sposób przeniesienia pozycji: *szczegółowo* (każdy przyjazd,
+     dzień pracy i część osobno) albo *zgrupowane* (Dojazd / Robocizna / Materiały). Dane klienta
+     uzupełniają się z projektu. Skrót: menu **⋮** w projekcie → **Utwórz wycenę**.
+   - **Pusta wycena** – pozycje dodajesz ręcznie (nazwa z podpowiedziami z katalogu, ilość, j.m., cena).
+3. Wycena ma numer (W/kolejny/rok), datę, dane zamawiającego, pole „Dotyczy” i uwagi – wszystko edytowalne.
+4. Przyciski **PDF** / **Word (DOCX)** tworzą plik, który można udostępnić (WhatsApp, e-mail…) lub zapisać w telefonie.
+   Nazwa pliku zaczyna się od treści pola „Dotyczy”, np. `Wymiana_rozdzielnicy_Wycena_W-1-2026.pdf`
+   (puste „Dotyczy” → `Wycena_W-1-2026.pdf`).
+
+Wyceny są zapisywane w aplikacji (i w kopii zapasowej) – można je edytować, duplikować i generować ponownie.
+Menu **⋮** w wycenie: pobierz ponownie pozycje z projektu, duplikuj, usuń.
+
+Folder `libs/` zawiera biblioteki do tworzenia PDF (jsPDF – MIT) i czcionkę z polskimi znakami
+(podzbiór Liberation Sans – SIL OFL 1.1), szczegóły w `libs/LICENSES.txt`. **Wgraj go razem z resztą plików.**
 
 ## Narzędzia
 
@@ -83,6 +117,11 @@ Kalkulatory zapamiętują ostatnio wpisane wartości (nie trafiają do kopii zap
 
 Dane są tylko w telefonie (w pamięci przeglądarki). Odinstalowanie aplikacji, wyczyszczenie
 danych przeglądarki albo zmiana telefonu = utrata danych.
-Regularnie rób kopię: **Ustawienia → Udostępnij kopię** (np. na Dysk Google) lub **Zapisz kopię do pliku**.
+Regularnie rób kopię: **Ustawienia (⚙) → Udostępnij kopię** (np. na Dysk Google) lub **Zapisz kopię do pliku**.
 Na nowym telefonie: **Ustawienia → Wczytaj kopię z pliku**.
 
+## Aktualizacja aplikacji
+
+Po zmianie plików wgraj je ponownie do repozytorium na GitHubie i w pliku `sw.js` podnieś numer
+wersji (np. `el_fuszka-v1.1.3` → `el_fuszka-v1.1.4`). Telefon pobierze nową wersję przy następnym uruchomieniu
+z dostępem do internetu. Dane nie zostaną usunięte.

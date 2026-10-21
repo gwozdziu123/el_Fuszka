@@ -1,0 +1,12 @@
+Biblioteki i czcionki użyte do generowania PDF w aplikacji el_Fuszka
+
+jspdf.umd.min.js – jsPDF 4.2.1, licencja MIT
+  (c) 2010-2025 James Hall, (c) 2015-2025 yWorks GmbH – https://github.com/parallax/jsPDF
+
+jspdf.plugin.autotable.min.js – jsPDF-AutoTable 5.0.9, licencja MIT
+  (c) Simon Bengtsson – https://github.com/simonbengtsson/jsPDF-AutoTable
+
+fonts.js – czcionka „ElfSans”: podzbiór Liberation Sans (Regular, Bold) ze zmienioną nazwą.
+  Digitized data copyright (c) 2010 Google Corporation with Reserved Font Arimo, Tinos and Cousine.
+  Copyright (c) 2012 Red Hat, Inc. with Reserved Font Name Liberation.
+  Licencja: SIL Open Font License 1.1 – https://openfontlicense.org
