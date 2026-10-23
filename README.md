@@ -13,6 +13,15 @@ Działa bez internetu, dane są zapisane w telefonie.
 | `icons/` | ikony aplikacji |
 | `libs/` | biblioteki do tworzenia PDF i czcionka |
 
+## Publikacja na GitHub Pages (jednorazowo, ok. 5 minut)
+
+1. Załóż darmowe konto na https://github.com.
+2. Kliknij **New repository**, nazwij je np. `el_fuszka`, ustaw **Public**, kliknij **Create repository**.
+3. Kliknij **uploading an existing file** i przeciągnij wszystkie pliki z tego folderu
+   (`index.html`, `manifest.webmanifest`, `sw.js` oraz foldery `icons` i `libs`). Kliknij **Commit changes**.
+4. Wejdź w **Settings → Pages**. W polu **Branch** wybierz `main`, folder `/ (root)`, kliknij **Save**.
+5. Po 1–2 minutach aplikacja będzie dostępna pod adresem
+   `https://<twoja-nazwa-użytkownika>.github.io/el_fuszka/`.
 
 ## Instalacja na telefonie
 
@@ -41,6 +50,17 @@ kopia zapasowa) otwiera ikona koła zębatego ⚙ w prawym górnym rogu.
 - Cena pozycji zapisuje się w chwili dodania. Zmiana stawek lub cen w katalogu nie zmienia
   starych wycen. Projekt można przeliczyć według aktualnych stawek z menu ⋮ w projekcie.
 
+## Stan magazynowy
+
+Każda część w katalogu ma **stan magazynowy** (liczba całkowita, domyślnie 0) – ustawiasz go w oknie części w zakładce **Katalog**.
+Stan jest widoczny (tylko gdy jest większy od 0) na liście katalogu i w podpowiedziach przy dodawaniu części do projektu i pozycji do wyceny.
+
+- Dodanie części z katalogu do projektu **odejmuje** ilość ze stanu (stan nie spadnie poniżej 0 – jeśli brakuje, aplikacja to pokaże).
+- Zmiana ilości w projekcie odejmuje lub oddaje różnicę, usunięcie części z projektu **oddaje** ją na stan.
+- Przy usuwaniu projektu można wybrać: zwrócić części na stan albo uznać je za zużyte.
+- Ilość ułamkowa w projekcie (np. 2,5) zdejmuje ze stanu pełne sztuki w górę (3).
+- Wyceny nie zmieniają stanu.
+
 ## Import / eksport katalogu części
 
 W zakładce **Katalog** → menu **⋮** u góry:
@@ -50,13 +70,16 @@ W zakładce **Katalog** → menu **⋮** u góry:
 - **Importuj z pliku** – wczytuje CSV lub JSON (także pełną kopię zapasową – brany jest tylko katalog).
   Do wyboru: *dodaj nowe i zaktualizuj ceny* albo *zastąp cały katalog*.
 
-Format CSV: dwie kolumny `Nazwa;Cena`, pierwszy wiersz to nagłówek, cena z przecinkiem, np.:
+Format CSV: kolumny `Nazwa;Cena;Stan`, pierwszy wiersz to nagłówek, cena z przecinkiem, np.:
 
 ```
-Nazwa;Cena
-Wyłącznik nadprądowy B16;18,50
-Przewód YDY 3x2,5;3,20
+Nazwa;Cena;Stan
+Wyłącznik nadprądowy B16;18,50;10
+Przewód YDY 3x2,5;3,20;0
 ```
+
+Kolumna `Stan` jest opcjonalna – starsze pliki z dwiema kolumnami nadal działają (stan istniejących części się wtedy nie zmienia).
+Wartość w kolumnie `Stan` przy imporcie **nadpisuje** stan części w aplikacji.
 
 Części dodane już do projektów nie zmieniają się przy imporcie.
 
@@ -110,3 +133,9 @@ Dane są tylko w telefonie (w pamięci przeglądarki). Odinstalowanie aplikacji,
 danych przeglądarki albo zmiana telefonu = utrata danych.
 Regularnie rób kopię: **Ustawienia (⚙) → Udostępnij kopię** (np. na Dysk Google) lub **Zapisz kopię do pliku**.
 Na nowym telefonie: **Ustawienia → Wczytaj kopię z pliku**.
+
+## Aktualizacja aplikacji
+
+Po zmianie plików wgraj je ponownie do repozytorium na GitHubie i w pliku `sw.js` podnieś numer
+wersji (np. `el_fuszka-v1.1.3` → `el_fuszka-v1.1.4`). Telefon pobierze nową wersję przy następnym uruchomieniu
+z dostępem do internetu. Dane nie zostaną usunięte.

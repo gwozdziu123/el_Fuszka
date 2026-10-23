@@ -157,6 +157,7 @@ textarea.inp{height:auto;min-height:80px;padding:12px 14px;resize:vertical}
 .sugg button:active,.sugg button.on{background:var(--primary-weak)}
 .sugg .sg-name{flex:1;min-width:0;overflow-wrap:anywhere}
 .sugg .sg-price{font-weight:600;white-space:nowrap}
+.sugg .sg-stock{display:block;color:var(--muted);font-size:13px;font-weight:400}
 .sugg-empty{padding:12px 14px;color:var(--muted);font-size:14px}
 
 .btn{height:50px;padding:0 20px;border-radius:12px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;gap:8px}
@@ -332,7 +333,7 @@ function normalize(d){
     version:1,
     settings:{...b.settings, ...(d.settings||{})},
     meta:{...b.meta, ...(d.meta||{})},
-    catalog:Array.isArray(d.catalog) ? d.catalog.filter(c=>c && c.name) : [],
+    catalog:Array.isArray(d.catalog) ? d.catalog.filter(c=>c && c.name).map(c=>({...c, stock: toStock(c.stock) ?? 0})) : [],
     sep:Array.isArray(d.sep) ? d.sep.filter(x=>x && x.title) : [],
     company:{...b.company, ...(d.company||{})},
     quotes:Array.isArray(d.quotes) ? d.quotes.filter(x=>x && x.id).map(x=>({
@@ -372,6 +373,13 @@ function parseNum(v){
   if(s==='') return null;
   const n = Number(s);
   return Number.isFinite(n) ? n : null;
+}
+/* Stan magazynowy – liczba całkowita >= 0 (undefined = brak wartości) */
+function toStock(v){
+  const s = String(v ?? '').replace(/szt\.?/gi,'').replace(/\s/g,'');
+  if(s==='') return undefined;
+  const n = parseNum(s);
+  return (n===null || n<0) ? undefined : Math.round(n);
 }
 function todayISO(){ const d = new Date(); d.setMinutes(d.getMinutes() - d.getTimezoneOffset()); return d.toISOString().slice(0,10); }
 function fmtDate(iso){ if(!iso) return ''; const [y,m,d] = iso.split('-'); return `${d}.${m}.${y}`; }
@@ -718,7 +726,7 @@ function rowHtml(it){
     sub = `${fn(it.hours)} h × ${fm(it.rate)}/h`;
   } else {
     title = esc(it.name);
-    sub = `${fn(it.qty)} × ${fm(it.price)}`;
+    sub = `${fn(it.qty)} × ${fm(it.price)}` + (it.taken>0 ? ` · ze stanu: ${it.taken} szt.` : '');
   }
   return `<button class="row" data-edit="${it.id}"><div class="row-main"><div class="row-title">${title}</div><div class="row-sub">${sub}</div></div><div class="row-amt">${fm(itemTotal(it))}</div></button>`;
 }
@@ -756,9 +764,20 @@ function projectMenu(p){
         }
         if(b.dataset.a==='delete'){
           await closeSheet();
-          if(await confirmDlg(`Usunąć projekt „${p.name}” wraz ze wszystkimi pozycjami?\nTej operacji nie można cofnąć.`)){
+          const msg = `Usunąć projekt „${p.name}” wraz ze wszystkimi pozycjami?\nTej operacji nie można cofnąć.`;
+          const taken = p.items.reduce((s, i) => s + (i.type==='part' && i.taken>0 ? i.taken : 0), 0);
+          let mode;
+          if(taken){
+            mode = await choiceDlg(`${msg}\n\nZe stanu magazynowego pobrano do tego projektu ${taken} szt. części.`, [
+              {k:'return', l:'Usuń i zwróć części na stan', cls:'danger'},
+              {k:'used', l:'Usuń – części zostały zużyte', cls:'danger-ghost'},
+              {k:null, l:'Anuluj'}
+            ]);
+          } else mode = await confirmDlg(msg) ? 'used' : null;
+          if(mode){
+            if(mode==='return') p.items.forEach(i => { if(i.type==='part') stockReturn(i); });
             db.projects = db.projects.filter(x => x.id!==p.id); save();
-            location.replace('#/projects'); toast('Projekt usunięty');
+            location.replace('#/projects'); toast(mode==='return' ? `Projekt usunięty · zwrócono na stan: ${taken} szt.` : 'Projekt usunięty');
           }
         }
       };
@@ -786,8 +805,48 @@ function itemSheet(p, type, it){
 function deleteItemHandler(p, it){
   return async () => {
     if(!await confirmDlg('Usunąć tę pozycję?')) return false;
-    p.items = p.items.filter(i => i.id!==it.id); touch(p); save(); toast('Usunięto');
+    const back = it.type==='part' ? stockReturn(it) : 0;
+    p.items = p.items.filter(i => i.id!==it.id); touch(p); save();
+    toast(back ? `Usunięto · zwrócono na stan: ${back} szt.` : 'Usunięto');
   };
+}
+
+/* ================= Stan magazynowy ================= */
+// Pozycja „część” w projekcie: cid – id części z katalogu, taken – ile sztuk odjęto ze stanu.
+const stockUnits = q => Math.max(0, Math.ceil((Number(q)||0) - 1e-9));
+const catByName = name => db.catalog.find(c => norm(c.name)===norm(String(name||'').trim())) || null;
+const stockCat = it => (it.cid && db.catalog.find(c => c.id===it.cid)) || catByName(it.name);
+function stockReturn(it){
+  const n = it.taken>0 ? it.taken : 0, c = n ? stockCat(it) : null;
+  if(c) c.stock = (c.stock||0) + n;
+  it.taken = 0;
+  return c ? n : 0;
+}
+// delta > 0: odejmij ze stanu (ile się da); delta < 0: oddaj nadmiar na stan
+function stockAdjust(it, cat, delta){
+  const taken = it.taken>0 ? it.taken : 0;
+  it.cid = cat.id;
+  if(delta > 0){
+    const t = Math.min(cat.stock||0, delta);
+    cat.stock = (cat.stock||0) - t; it.taken = taken + t;
+    return {took: t, short: t ? delta - t : 0};
+  }
+  if(delta < 0){
+    const target = Math.min(taken, stockUnits(it.qty)), back = taken - target;
+    cat.stock = (cat.stock||0) + back; it.taken = target;
+    return {back};
+  }
+  it.taken = taken;
+  return {};
+}
+function stockTake(it){
+  const cat = catByName(it.name);
+  it.taken = 0;
+  if(!cat){ delete it.cid; return {}; }
+  return stockAdjust(it, cat, stockUnits(it.qty));
+}
+function stockMsg(r){
+  return (r.took ? ` · ze stanu −${r.took} szt.` : '') + (r.back ? ` · na stan +${r.back} szt.` : '') + (r.short ? ` (brakło ${r.short} szt.)` : '');
 }
 function totalBox(id){ return `<div class="total-box"><span>Wartość<small id="${id}-f"></small></span><b id="${id}">0 zł</b></div>`; }
 
@@ -862,7 +921,7 @@ function partSheet(p, it){
   openSheet(isNew ? 'Nowa część' : 'Część', `
     <div class="field"><label for="f-name">Nazwa części</label>
       <input class="inp" id="f-name" name="name" value="${esc(d.name)}" placeholder="Wpisz lub wybierz z katalogu" autocapitalize="sentences" enterkeyhint="done">
-      <div class="sugg" id="sugg"></div></div>
+      <div class="sugg" id="sugg"></div><div class="hint" id="stockhint" hidden></div></div>
     ${fieldNum('price', 'Cena za szt.', d.price, 'zł')}
     ${fieldStepper('qty', 'Ilość', d.qty, 1, [], '')}
     <label class="check" id="savecat" hidden><input type="checkbox" name="savecat" checked> Zapisz też w katalogu części</label>
@@ -880,7 +939,7 @@ function partSheet(p, it){
         if(!db.catalog.length){ sugg.innerHTML = '<div class="sugg-empty">Katalog jest pusty – wpisz własną część. Możesz ją od razu zapisać w katalogu.</div>'; return; }
         const q = norm(nameEl.value.trim());
         const list = db.catalog.filter(c => !q || norm(c.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pl')).slice(0,50);
-        sugg.innerHTML = list.length ? list.map(c => `<button type="button" data-cid="${c.id}"><span class="sg-name">${esc(c.name)}</span><span class="sg-price">${fm(c.price)}</span></button>`).join('')
+        sugg.innerHTML = list.length ? list.map(c => `<button type="button" data-cid="${c.id}"><span class="sg-name">${esc(c.name)}${stockSmall(c)}</span><span class="sg-price">${fm(c.price)}</span></button>`).join('')
           : '<div class="sugg-empty">Brak w katalogu – zostanie dodana jako własna część.</div>';
       };
       const upd = () => {
@@ -888,6 +947,12 @@ function partSheet(p, it){
         $('#pt', form).textContent = fm(price*qty);
         $('#pt-f', form).textContent = `${fn(qty)} × ${fm(price)}`;
         saveCat.hidden = !nameEl.value.trim() || !!exact();
+        const c = exact(), hint = $('#stockhint', form);
+        const mine = !isNew && it.taken>0 && c && stockCat(it) && stockCat(it).id===c.id ? it.taken : 0;
+        const parts = [];
+        if(c && c.stock>0) parts.push(`Na stanie: ${c.stock} szt.`);
+        if(mine) parts.push(`pobrano do tej pozycji: ${mine} szt.`);
+        hint.hidden = !parts.length; hint.textContent = parts.join(' · ');
       };
       nameEl.addEventListener('input', () => { showSugg = true; drawSugg(); });
       nameEl.addEventListener('focus', () => { showSugg = true; drawSugg(); });
@@ -907,11 +972,17 @@ function partSheet(p, it){
       if(price===null || price<0) return markErr(form, 'price', 'Podaj cenę');
       if(qty===null || qty<=0) return markErr(form, 'qty', 'Podaj ilość');
       const data = {type:'part', name, price, qty};
-      if(isNew) p.items.push({id: uid(), ...data}); else Object.assign(it, data);
       const inCat = db.catalog.find(c => norm(c.name)===norm(name));
-      if(!inCat && form.elements.savecat.checked){ db.catalog.push({id: uid(), name, price}); }
+      if(!inCat && form.elements.savecat.checked){ db.catalog.push({id: uid(), name, price, stock:0}); }
+      let st;
+      if(isNew){ const item = {id: uid(), ...data}; p.items.push(item); st = stockTake(item); }
+      else {
+        const prev = stockCat(it), oldQty = it.qty, cat = catByName(name);
+        if(prev && cat && prev.id===cat.id){ Object.assign(it, data); st = stockAdjust(it, cat, stockUnits(qty) - stockUnits(oldQty)); }
+        else { const back = stockReturn(it); Object.assign(it, data); st = stockTake(it); st.back = back; }
+      }
       touch(p); save();
-      toast((isNew ? 'Dodano część' : 'Zapisano') + (!inCat && form.elements.savecat.checked ? ' (+ katalog)' : ''));
+      toast((isNew ? 'Dodano część' : 'Zapisano') + (!inCat && form.elements.savecat.checked ? ' (+ katalog)' : '') + stockMsg(st));
     }
   });
 }
@@ -935,18 +1006,20 @@ function renderCatalogList(){
     return;
   }
   el.innerHTML = `<div class="small muted" style="margin:0 4px 8px">${list.length} ${list.length===1?'pozycja':(list.length%10>=2&&list.length%10<=4&&(list.length%100<10||list.length%100>=20)?'pozycje':'pozycji')}</div>
-    <section class="card">${list.map(c => `<button class="row" data-cid="${c.id}"><div class="row-main"><div class="row-title">${esc(c.name)}</div></div><div class="row-amt">${fm(c.price)}</div></button>`).join('')}</section>`;
+    <section class="card">${list.map(c => `<button class="row" data-cid="${c.id}"><div class="row-main"><div class="row-title">${esc(c.name)}</div>${c.stock>0 ? `<div class="row-sub">Na stanie: ${c.stock} szt.</div>` : ''}</div><div class="row-amt">${fm(c.price)}</div></button>`).join('')}</section>`;
 }
+function stockSmall(c){ return c.stock>0 ? `<small class="sg-stock">na stanie: ${c.stock} szt.</small>` : ''; }
 function catalogForm(c){
   const isNew = !c;
-  const d = c || {name:'', price:null};
+  const d = c || {name:'', price:null, stock:0};
   openSheet(isNew ? 'Nowa część w katalogu' : 'Część w katalogu', `
     <div class="field"><label for="f-name">Nazwa</label><input class="inp" id="f-name" name="name" value="${esc(d.name)}" placeholder="np. Wyłącznik nadprądowy B16" autocapitalize="sentences"></div>
     ${fieldNum('price', 'Cena', d.price, 'zł')}
-    ${isNew ? '' : '<div class="hint">Zmiana ceny nie wpływa na części już dodane do projektów.</div>'}
+    ${fieldStepper('stock', 'Stan magazynowy (szt.)', d.stock||0, 1)}
+    <div class="hint">Dodanie części do projektu odejmuje ją ze stanu, usunięcie z projektu – oddaje.${isNew ? '' : '<br>Zmiana ceny nie wpływa na części już dodane do projektów.'}</div>
   `, {
     saveLabel: isNew ? 'Dodaj do katalogu' : 'Zapisz',
-    onMount: form => { if(isNew) setTimeout(()=>form.elements.name.focus(), 250); },
+    onMount: form => { bindSteppers(form); if(isNew) setTimeout(()=>form.elements.name.focus(), 250); },
     onDelete: isNew ? null : async () => {
       if(!await confirmDlg(`Usunąć „${c.name}” z katalogu?\nCzęści dodane już do projektów pozostaną.`)) return false;
       db.catalog = db.catalog.filter(x => x.id!==c.id); save(); toast('Usunięto z katalogu');
@@ -955,9 +1028,11 @@ function catalogForm(c){
       const name = form.elements.name.value.trim(), price = parseNum(form.elements.price.value);
       if(!name) return markErr(form, 'name', 'Podaj nazwę');
       if(price===null || price<0) return markErr(form, 'price', 'Podaj cenę');
+      const sv = form.elements.stock.value.trim(), stock = sv==='' ? 0 : parseNum(sv);
+      if(stock===null || stock<0 || !Number.isInteger(stock)) return markErr(form, 'stock', 'Podaj liczbę całkowitą (0 lub więcej)');
       const dup = db.catalog.find(x => x.id!==(c&&c.id) && norm(x.name)===norm(name));
       if(dup) return markErr(form, 'name', 'Taka część już jest w katalogu');
-      if(isNew) db.catalog.push({id: uid(), name, price}); else Object.assign(c, {name, price});
+      if(isNew) db.catalog.push({id: uid(), name, price, stock}); else Object.assign(c, {name, price, stock});
       save(); toast(isNew ? 'Dodano do katalogu' : 'Zapisano');
     }
   });
@@ -993,8 +1068,8 @@ function downloadBlob(blob, name){
 function catalogCsv(){
   const q = v => { const s = String(v); return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s; };
   const rows = [...db.catalog].sort((a,b)=>a.name.localeCompare(b.name,'pl'))
-    .map(c => q(c.name) + ';' + r2(c.price).toFixed(2).replace('.', ','));
-  return '﻿' + ['Nazwa;Cena', ...rows].join('\r\n') + '\r\n';
+    .map(c => q(c.name) + ';' + r2(c.price).toFixed(2).replace('.', ',') + ';' + (c.stock||0));
+  return '﻿' + ['Nazwa;Cena;Stan', ...rows].join('\r\n') + '\r\n';
 }
 const catalogFileName = () => `el_fuszka-katalog-${todayISO()}.csv`;
 const catalogBlob = () => new Blob([catalogCsv()], {type:'text/csv;charset=utf-8'});
@@ -1023,7 +1098,7 @@ function parsePrice(v){
   if(s.includes('.') && s.includes(',')) s = s.replace(/\./g,'');
   return parseNum(s);
 }
-/* Zwraca {items:[{name,price}], skipped} */
+/* Zwraca {items:[{name,price,stock?}], skipped} – stock undefined = brak kolumny/wartości */
 function parseCatalogFile(text){
   text = text.replace(/^﻿/, '');
   const t = text.trim();
@@ -1034,19 +1109,24 @@ function parseCatalogFile(text){
     if(!arr) throw new Error('format');
     arr.forEach(c => {
       const name = String(c && (c.name ?? c.nazwa) || '').trim(), price = parsePrice(c && (c.price ?? c.cena));
-      if(name && price!==null && price>=0) raw.push({name, price}); else skipped++;
+      const stock = toStock(c && (c.stock ?? c.stan));
+      if(name && price!==null && price>=0) raw.push({name, price, stock}); else skipped++;
     });
   } else {
-    parseCsvRows(text).forEach((r, idx) => {
+    const rows = parseCsvRows(text);
+    const nCols = (rows[0]||[]).some(c => norm(String(c).trim())==='stan') ? 3 : 2;
+    rows.forEach((r, idx) => {
       const name = String(r[0]||'').trim();
+      let pr = r[1], rest = r.slice(2);
       // CSV z przecinkiem jako separatorem i ceną "3,20" bez cudzysłowu
-      const price = parsePrice(r.length===3 && /^\d+$/.test(String(r[1]).trim()) && /^\d{1,2}$/.test(String(r[2]).trim()) ? r[1]+','+r[2] : r[1]);
-      if(name && price!==null && price>=0) raw.push({name, price});
+      if(r.length===nCols+1 && /^\d+$/.test(String(r[1]).trim()) && /^\d{1,2}$/.test(String(r[2]).trim())){ pr = r[1]+','+r[2]; rest = r.slice(3); }
+      const price = parsePrice(pr), stock = toStock(rest[0]);
+      if(name && price!==null && price>=0) raw.push({name, price, stock});
       else if(idx>0) skipped++;     // pierwszy wiersz to zwykle nagłówek
     });
   }
   const map = new Map();             // duplikaty w pliku: ostatni wygrywa
-  raw.forEach(it => map.set(norm(it.name), {name: it.name, price: r2(it.price)}));
+  raw.forEach(it => map.set(norm(it.name), {name: it.name, price: r2(it.price), stock: it.stock}));
   return {items: [...map.values()], skipped};
 }
 function importCatalogFromFile(){
@@ -1063,15 +1143,15 @@ function importCatalogFromFile(){
     let nNew = 0, nChanged = 0, nSame = 0;
     items.forEach(it => {
       const ex = db.catalog.find(c => norm(c.name)===norm(it.name));
-      if(!ex) nNew++; else if(r2(ex.price)!==it.price) nChanged++; else nSame++;
+      if(!ex) nNew++; else if(r2(ex.price)!==it.price || (it.stock!==undefined && it.stock!==(ex.stock||0))) nChanged++; else nSame++;
     });
     const info = `W pliku: ${items.length} ${plural(items.length,'część','części','części')}` + (skipped ? ` (pominięto ${skipped} ${plural(skipped,'błędny wiersz','błędne wiersze','błędnych wierszy')})` : '') + '.';
     let mode;
     if(!db.catalog.length){
       mode = await choiceDlg(`${info}\nWczytać je do katalogu?`, [{k:'merge', l:'Wczytaj', cls:'primary'}, {k:null, l:'Anuluj'}]);
     } else {
-      mode = await choiceDlg(`${info}\n\n• nowe: ${nNew}\n• ze zmienioną ceną: ${nChanged}\n• bez zmian: ${nSame}\n\nObecnie w katalogu: ${db.catalog.length}.`, [
-        {k:'merge', l:`Dodaj nowe i zaktualizuj ceny`, cls:'primary'},
+      mode = await choiceDlg(`${info}\n\n• nowe: ${nNew}\n• ze zmienioną ceną lub stanem: ${nChanged}\n• bez zmian: ${nSame}\n\nObecnie w katalogu: ${db.catalog.length}.`, [
+        {k:'merge', l:`Dodaj nowe i zaktualizuj ceny/stany`, cls:'primary'},
         {k:'replace', l:'Zastąp cały katalog', cls:'danger-ghost'},
         {k:null, l:'Anuluj'}
       ]);
@@ -1079,13 +1159,14 @@ function importCatalogFromFile(){
     if(!mode) return;
     if(mode==='replace'){
       if(!await confirmDlg(`Usunąć obecne ${db.catalog.length} części z katalogu i wczytać ${items.length} z pliku?\nCzęści dodane już do projektów pozostaną bez zmian.`, 'Zastąp')) return;
-      db.catalog = items.map(it => ({id: uid(), ...it}));
+      db.catalog = items.map(it => ({id: uid(), ...it, stock: it.stock ?? 0}));
       save(); render(); toast(`Katalog zastąpiony: ${items.length} części`);
       return;
     }
     items.forEach(it => {
       const ex = db.catalog.find(c => norm(c.name)===norm(it.name));
-      if(!ex) db.catalog.push({id: uid(), ...it}); else ex.price = it.price;
+      if(!ex) db.catalog.push({id: uid(), ...it, stock: it.stock ?? 0});
+      else { ex.price = it.price; if(it.stock!==undefined) ex.stock = it.stock; }
     });
     save(); render(); toast(`Dodano ${nNew}, zaktualizowano ${nChanged}`);
   };
@@ -1095,7 +1176,7 @@ function catalogMenu(){
   const share = canShareFiles();
   const n = db.catalog.length;
   openSheet('Katalog części', `<div class="menu-list">
-    <button type="button" data-a="import">${ic('upload')}<span>Importuj z pliku<small>CSV (Nazwa;Cena – np. z Excela) lub JSON</small></span></button>
+    <button type="button" data-a="import">${ic('upload')}<span>Importuj z pliku<small>CSV (Nazwa;Cena;Stan – np. z Excela) lub JSON</small></span></button>
     <button type="button" data-a="export">${ic('download')}<span>${n ? 'Eksportuj do pliku CSV' : 'Pobierz pusty wzór pliku CSV'}<small>${n ? `${n} części · otworzysz w Excelu` : 'Uzupełnij w Excelu i zaimportuj'}</small></span></button>
     ${share && n ? `<button type="button" data-a="share">${ic('share')}<span>Udostępnij katalog<small>np. mailem, na Dysk, drugiemu monterowi</small></span></button>` : ''}
   </div>`, {
@@ -1448,7 +1529,7 @@ function quoteItemSheet(q, it){
         const qq = norm(nameEl.value.trim());
         const list = db.catalog.filter(c => qq && norm(c.name).includes(qq)).sort((a,b)=>a.name.localeCompare(b.name,'pl')).slice(0,30);
         sugg.hidden = !list.length;
-        sugg.innerHTML = list.map(c => `<button type="button" data-cid="${c.id}"><span class="sg-name">${esc(c.name)}</span><span class="sg-price">${fm(c.price)}</span></button>`).join('');
+        sugg.innerHTML = list.map(c => `<button type="button" data-cid="${c.id}"><span class="sg-name">${esc(c.name)}${stockSmall(c)}</span><span class="sg-price">${fm(c.price)}</span></button>`).join('');
       };
       const upd = () => {
         const qty = parseNum(form.elements.qty.value)||0, price = parseNum(form.elements.price.value)||0;

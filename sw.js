@@ -1,6 +1,6 @@
 /* Service worker – działanie offline.
    Po każdej zmianie plików aplikacji podnieś numer wersji poniżej. */
-const CACHE = 'el_fuszka-v1.5.0';
+const CACHE = 'el_fuszka-v1.6.0';
 const ASSETS = [
   './',
   './index.html',
