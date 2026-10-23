@@ -526,7 +526,7 @@ function syncQuick(form, name){
 /* ================= Nawigacja ================= */
 const view = $('#view'), topbar = $('#topbar'), fab = $('#fab');
 let prevRoute = null, lastTab = 'projects';
-const ui = {q:'', status:'all', catQ:''};
+const ui = {q:'', status:'all', catQ:'', catF:'all'};
 
 function parseRoute(){
   const h = (location.hash || '#/projects').replace(/^#\/?/, '');
@@ -992,17 +992,25 @@ function viewCatalog(){
   setTop({title:'Katalog części', menu: () => catalogMenu(), gear:true});
   setFab('Nowa część', () => catalogForm());
   view.onclick = null;
-  view.innerHTML = `<div class="search">${ic('search')}<input id="cq" type="search" placeholder="Szukaj części" value="${esc(ui.catQ)}" enterkeyhint="search"></div><div id="clist"></div>`;
+  view.innerHTML = `<div class="search">${ic('search')}<input id="cq" type="search" placeholder="Szukaj części" value="${esc(ui.catQ)}" enterkeyhint="search"></div><div class="chips" id="cchips"></div><div id="clist"></div>`;
   $('#cq').oninput = e => { ui.catQ = e.target.value; renderCatalogList(); };
+  $('#cchips').onclick = e => { const b = e.target.closest('[data-cf]'); if(b){ ui.catF = b.dataset.cf; renderCatalogList(); } };
   $('#clist').onclick = e => { const b = e.target.closest('[data-cid]'); if(b){ const c = db.catalog.find(x=>x.id===b.dataset.cid); if(c) catalogForm(c); } };
   renderCatalogList();
 }
 function renderCatalogList(){
   const q = norm(ui.catQ.trim());
-  const list = db.catalog.filter(c => !q || norm(c.name).includes(q)).sort((a,b)=>a.name.localeCompare(b.name,'pl'));
+  const found = db.catalog.filter(c => !q || norm(c.name).includes(q));
+  const CF = [{k:'all', l:'Wszystkie', f:() => true}, {k:'in', l:'Na stanie', f:c => c.stock>0}, {k:'out', l:'Bez stanu', f:c => !(c.stock>0)}];
+  const cf = CF.find(x => x.k===ui.catF) || CF[0];
+  const chips = $('#cchips');
+  chips.hidden = !db.catalog.length;
+  chips.innerHTML = CF.map(x => `<button class="chip ${x===cf?'on':''}" data-cf="${x.k}">${x.l}<span class="cnt">${found.filter(x.f).length}</span></button>`).join('');
+  const list = found.filter(cf.f).sort((a,b)=>a.name.localeCompare(b.name,'pl'));
   const el = $('#clist');
   if(!list.length){
-    el.innerHTML = `<div class="empty">${ic('box')}<p>${db.catalog.length ? 'Nic nie znaleziono.' : 'Katalog jest pusty.<br>Dodaj części, których często używasz,<br>albo zaimportuj listę z pliku (menu ⋮ u góry).'}</p></div>`;
+    const none = q ? 'Nic nie znaleziono.' : (cf.k==='in' ? 'Żadna część nie jest na stanie.' : 'Wszystkie części są na stanie.');
+    el.innerHTML = `<div class="empty">${ic('box')}<p>${db.catalog.length ? none : 'Katalog jest pusty.<br>Dodaj części, których często używasz,<br>albo zaimportuj listę z pliku (menu ⋮ u góry).'}</p></div>`;
     return;
   }
   el.innerHTML = `<div class="small muted" style="margin:0 4px 8px">${list.length} ${list.length===1?'pozycja':(list.length%10>=2&&list.length%10<=4&&(list.length%100<10||list.length%100>=20)?'pozycje':'pozycji')}</div>

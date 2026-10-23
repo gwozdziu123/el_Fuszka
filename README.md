@@ -54,6 +54,7 @@ kopia zapasowa) otwiera ikona koła zębatego ⚙ w prawym górnym rogu.
 
 Każda część w katalogu ma **stan magazynowy** (liczba całkowita, domyślnie 0) – ustawiasz go w oknie części w zakładce **Katalog**.
 Stan jest widoczny (tylko gdy jest większy od 0) na liście katalogu i w podpowiedziach przy dodawaniu części do projektu i pozycji do wyceny.
+Nad listą katalogu są filtry **Wszystkie / Na stanie / Bez stanu** (z liczbą części; działają razem z wyszukiwarką).
 
 - Dodanie części z katalogu do projektu **odejmuje** ilość ze stanu (stan nie spadnie poniżej 0 – jeśli brakuje, aplikacja to pokaże).
 - Zmiana ilości w projekcie odejmuje lub oddaje różnicę, usunięcie części z projektu **oddaje** ją na stan.
